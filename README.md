@@ -259,9 +259,53 @@ Assign("cp_set", CartesianProduct( SetIdentifier(Value(1), Value(2)), SetIdentif
 Variable("cp_set").eval      // returns Set( (1, 3), (1, 4), (2, 3), (2, 4) )
 ```
 
+### InsertInto(setExp: SetExpression, setExpArgs: SetExpression*): collection.mutable.Set[Any]
+The `InsertInto` expression take the first argument as a `SetExpression` which must resolve or evaluate to a `mutable Set`. The other argument(s) are also `SetExpression` type but they can be more than one. These `SetExpression`s are evaluated to their respective values and are then inserted into the Set evaluated from the first argument.
 
+Syntax/Example:
+```
+Assign("var1", Value("insertValue") ).eval                 // creating a variable
+Assign("set1", SetIdentifier( Value(20) ) ).eval           // creating a set with one Int 20 in it
 
+InsertInto( Variable("set1"), Value(30), Variable("var1") ).eval         // inserting into the set set1 30 as well as value of variable var1 which is "insertValue"
+Variable("set1").eval                                                    // Would return Set(20, 30, "insertValue")
+```
 
+### DeleteFrom(setExp: SetExpression, setExpArgs: SetExpression*)
+The `DeleteFrom` expression deletes one or many values from a Set. The first argument is a `SetExpression` which should resolve to a `mutable.Set[Any]` and other arguments are also of type `SetExpression` which are the values that need to be removed from the Set. Multiple values can be remove with one expression.
 
+Syntax/Code Example:
+```
+Assign("set1", SetIdentifier( Value(20), Value(30), Value(40) ) ).eval  
 
+DeleteFrom( Variable("set1"), Value(20) ).eval            // deletes 20 from Set set1
+DeleteFrom( Variable("set1"), Value(30), Value(1), Value(3) ).eval            // can pass multiple SetExpression for deleting but only matched ones are deleted, here only 30 is deleted from the Set as 1 and 3 are not part of the Set  
 
+Variable("set1").eval                // returns Set(40)
+```
+
+### Contains(setExp: SetExpression, valueExp: SetExpression): Boolean
+The `Contains` expression takes two arguments. The first is of type `SetExpression` which must evaluate to a `mutable.Set[Any]`. The second argument is also a `SetExpression` and it should evaluate to any value or data-type which we desire to know whether it is part of the Set evaluated from the first argument or not.
+It returns a Boolean depends upon whether the value is in the Set or not.
+
+Syntax/Code Example:
+```
+Assign("set1", SetIdentifier( Value(20), Value(30), Value(40) ) ).eval  
+Contains( Variable("set1"), Value(5) ).eval                // returns false
+Contains( Variable("set1"), Value(30) ).eval               // returns true 
+```
+
+### Equals(exp1: SetExpression, exp2: SetExpression): Boolean
+The `Equals` expression take two arguments evaluates their value and compares them. If both of the evaluated values are equal, then it returns true otherwise false.
+
+Syntax/Code Example:
+```
+Assign("var1", Value(20)).eval
+Assign("var2", Value(50)).eval
+Equals( Variable("var1"), Variable("var2") ).eval             // returns false as 20 does not equals 50
+Equals( Variable("var1), Value(20) ).eval                     //returns true as both expression evaluate to value 20
+```
+
+That's it. Those are all the expression we can use in Set Theory DSL.
+
+More features coming soon.
