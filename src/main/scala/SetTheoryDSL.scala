@@ -118,12 +118,12 @@ object SetTheoryDSL {
     /** InsertInto Expression signature
      * inserts value(s) into a set
      */
-    case InsertInto(name: String, setExpArgs: SetExpression*)
+    case InsertInto(setExp: SetExpression, setExpArgs: SetExpression*)
 
     /** DeleteFrom Expression signature
      * deletes value(s) from a set
      */
-    case DeleteFrom(name: String, setExpArgs: SetExpression*)
+    case DeleteFrom(setExp: SetExpression, setExpArgs: SetExpression*)
 
     /** Contains Expression signature
      * checks if a set contains a particular value
@@ -220,16 +220,16 @@ object SetTheoryDSL {
         for {x <- s1.eval.asInstanceOf[SetType]; y <- s2.eval.asInstanceOf[SetType]} yield (x, y)
 
       // InsertInto Expression Implementation
-      case InsertInto(name, setExpArgs*) =>
+      case InsertInto(setExp, setExpArgs*) =>
         // find the set stored in the variable and add evaluated values of each expression into it
-        val storedSet = Variable(name).eval.asInstanceOf[SetType]
+        val storedSet = setExp.eval.asInstanceOf[SetType]
         setExpArgs.foreach(storedSet += _.eval)
         storedSet
 
       // DeleteFrom Expression Implementation
-      case DeleteFrom(name, setExpArgs*) =>
+      case DeleteFrom(setExp, setExpArgs*) =>
         // find the set stored in the variable and remove evaluated values of each expression from it if they are already present in the set
-        val storedSet = Variable(name).eval.asInstanceOf[SetType]
+        val storedSet = setExp.eval.asInstanceOf[SetType]
         setExpArgs.foreach( i => storedSet.remove(i.eval))
 
       // Contains Expression Implementation

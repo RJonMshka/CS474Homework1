@@ -38,33 +38,33 @@ class SetTheoryDSLTest extends AnyFlatSpec {
 
   it should "insert a value into an existing set" in {
     Assign("set_t6", SetIdentifier( Value(10) )).eval
-    InsertInto("set_t6", Value(20)).eval
+    InsertInto( Variable("set_t6"), Value(20)).eval
     assert( Variable("set_t6").eval == Set(10, 20) )
   }
 
   it should "insert multiple values and/or variables into an existing set" in {
     Assign("set_t7", SetIdentifier( Value(10) )).eval
     Assign("var_t7", Value(50)).eval
-    InsertInto("set_t7", Value(20), Value(30), Variable("var_t7") ).eval
+    InsertInto( Variable("set_t7"), Value(20), Value(30), Variable("var_t7") ).eval
     assert( Variable("set_t7").eval == Set(10, 20, 30, 50) )
   }
 
   it should "delete a value from an existing set" in {
     Assign("set_t8", SetIdentifier( Value(10) )).eval
-    DeleteFrom("set_t8", Value(10)).eval
+    DeleteFrom( Variable("set_t8"), Value(10)).eval
     assert( Variable("set_t8").eval == Set() )
   }
 
   it should "not delete a value from an existing set if that value is not there" in {
     Assign("set_t9", SetIdentifier( Value(10) )).eval
-    DeleteFrom("set_t9", Value(20)).eval
+    DeleteFrom( Variable("set_t9"), Value(20)).eval
     assert( Variable("set_t9").eval == Set(10) )
   }
 
   it should "delete multiple values and/or variables from an existing set" in {
     Assign("var_t10", Value(50)).eval
     Assign("set_t10", SetIdentifier( Value(10), Value(20), Value(30), Variable("var_t10") )).eval
-    DeleteFrom("set_t10", Value(10), Value(20) ).eval
+    DeleteFrom( Variable("set_t10"), Value(10), Value(20) ).eval
     assert( Variable("set_t10").eval == Set(30, 50) )
   }
 
@@ -72,7 +72,7 @@ class SetTheoryDSLTest extends AnyFlatSpec {
     Assign("var_t11", Value(50)).eval
     Assign("set_t11", SetIdentifier( Value(10) )).eval
     NamedScope("scope_11",
-      InsertInto("set_t11", Variable("var_t11"))
+      InsertInto( Variable("set_t11"), Variable("var_t11"))
     ).eval
     assert( Variable("set_t11").eval == Set(10, 50) )
   }
@@ -81,7 +81,7 @@ class SetTheoryDSLTest extends AnyFlatSpec {
     Assign("var_t12", Value(50)).eval
     Assign("set_t12", SetIdentifier( Value(10) )).eval
     UnnamedScope(
-      InsertInto("set_t12", Variable("var_t12"))
+      InsertInto( Variable("set_t12"), Variable("var_t12"))
     ).eval
     assert( Variable("set_t12").eval == Set(10, 50) )
   }
@@ -92,7 +92,7 @@ class SetTheoryDSLTest extends AnyFlatSpec {
     NamedScope("scope_13",
       Assign("var_t13", Value(50)),
       UnnamedScope(
-        InsertInto("set_t13", Variable("var_t13"))
+        InsertInto( Variable("set_t13"), Variable("var_t13"))
       )
     ).eval
     assert( Variable("set_t13").eval == Set(10, 50) )
@@ -106,7 +106,7 @@ class SetTheoryDSLTest extends AnyFlatSpec {
     ).eval
 
     NamedScope("scope_14",
-      InsertInto("set_t14", Variable("var_t14"))
+      InsertInto( Variable("set_t14"), Variable("var_t14"))
     ).eval
     assert( Variable("set_t14").eval == Set(10, 50) )
   }
