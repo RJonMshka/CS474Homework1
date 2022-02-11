@@ -14,13 +14,14 @@ object SetTheoryDSL {
 
   @tailrec
   private def getVariable(varName: String, scopeEnv: Scope): Any =
-    if (!(scopeEnv.bindingEnvironment.get(varName).isEmpty && scopeEnv.scopeParent != null)) then
+    if !(!scopeEnv.bindingEnvironment.contains(varName) && scopeEnv.scopeParent != null) then
       scopeEnv.bindingEnvironment(varName)
     else
       getVariable(varName, scopeEnv.scopeParent)
 
   private val currentEnvironment: Array[Scope] = new Array[Scope](1)
   private val index = 0
+  private val globalScopeName = "globalScope"
   currentEnvironment(index) = new Scope("globalScope", null)
 
   enum SetExpression:
