@@ -30,8 +30,10 @@ Set Theory DSL is a Domain Specific Language created to perform simple operation
 15. Once build is finished, you are ready to run the project.
 16. `src/test/scala/SetTheoryDSLTest.scala` is the file where all the test cases are written. This is the file you need to run to test the project. 
 17. You can add your own test cases in it to test the project better.
-18. The file `src/main/scala/SetTheoryDSL.scala` is the main implementation of Set Theory DSL.
-19. Please explore and have fun.
+18. To run test cases directly from terminal, enter the command `sbt compile test` or `sbt clean compile test`.
+19. To run the main file `SetTheoryDSLTest.scala`, enter the command `sbt compile run` or `sbt clean compile run` in the terminal.
+20. The file `src/main/scala/SetTheoryDSL.scala` is the main implementation of Set Theory DSL.
+21. Please explore and have fun.
 
 ---
 
@@ -159,9 +161,9 @@ NamedScope("scope1",
 // Accessing named scopes again
 
 NamedScope("scope1", 
-    Assign( "var2", Variable("var1) ),           // var2 will be assigned value 20
+    Assign( "var2", Variable("var1) ),           // var2 will be assigned value 20 because var1 is already declared in this scope earlier
     NamedScope("scope2, 
-        Assign( "var3", Variable("var1") )       // var3 will be assigned value 30
+        Assign( "var3", Variable("var1") )       // var3 will be assigned value 30 because var1 is already declared (shadowed the var1 of scope1) in this scope earlier
     )                           
 ).eval 
 

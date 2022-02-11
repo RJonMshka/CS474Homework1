@@ -241,4 +241,11 @@ object SetTheoryDSL {
       case Equals(exp1, exp2) => exp1.eval.equals(exp2.eval)
     }
 
+  /**
+   * Main Function, entry point to the application
+   */
+  @main def runSetTheoryDSL(): Unit = {
+    println("program runs successfully")
+  }
+
 }
