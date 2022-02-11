@@ -171,6 +171,7 @@ NamedScope("scope1",
 
 ### UnnamedScope(scopeExpArgs: SetExpression*)
 The `UnnamedScope` expression is similar to `NamedScope` expression above. However, there are few differences. It does not have a name. We only specify the SetExpression(s) to execute in that scope. Also, since, it does not have a name, it will not be accessible to its parent once it is closed. If any named or Unnamed scopes are created inside it, they will also not be accessing if this scope closes.
+Its similar to NamedScope in the sense that they share almost the same syntax except name as the first argument.
 
 Example:
 ```
@@ -193,8 +194,74 @@ UnnamedScope(
 UnnamedScope( 
     Assign( "var1", Value(20) ),                            // This variable won't be accessible outside of this scope once this scope closes
     UnnamedScope( 
-        Assign( "var1", Value(30) )                         // This variable won't be accessible outside of this scope once this scope closes
+        Assign( "var1", Value(30) ),                        // This variable won't be accessible outside of this scope once this scope closes
+        Assign( "var2", Value(50) )
     )                                                           
 ).eval  
 
 ```
+
+### SetIdentifier(setExpArgs: SetExpression*): collection.mutable.Set[Any]
+The `SetIdentifier` returns a mutable Set of Any data-type. The syntax is pretty simple, we can pass zero or more `SetExpression`s to it and it will evaluate all of them and place them in a mutable Set.
+To store this Set, we can use the `Assign` expression.
+
+Syntax/Example:
+```
+Assign("set1", SetIdentifier() ).eval            // stores/references the mutable.Set() in variable named set1
+Assign( "var1", Value(30) ).eval
+Assign("set2". SetIdentifier( Value(1), Value("hello"), Variable("var1) ) ).eval     // Variable set2 will store reference to a new Set which has elements 1, "hello" and 30
+
+Variable("set2").eval                 // returns Set(1, "hello", 30)
+```
+
+### Union(s1: SetExpression, s2: SetExpression): collection.mutable.Set[Any]
+The `Union` expression takes exactly two arguments, both of type `SetExpression`. They both must evaluate to a Set of type `mutable.Set[Any]`. This expression performs the union operation of two sets and return another set with elements containing elements of both sets.
+
+Syntax/Example:
+```
+Assign("union_set", Union( SetIdentifier(Value(1), Value(2)), SetIdentifier(Value(3), Value(4)) ) ).eval
+Variable("union_set").eval      // returns Set(1,2,3,4)
+```
+
+### Intersection(s1: SetExpression, s2: SetExpression): collection.mutable.Set[Any]
+The `Intersection` expression takes exactly two arguments like `Union`, both of type `SetExpression`. They both must evaluate to a Set of type `mutable.Set[Any]`. This expression performs the intersection operation of two sets and return another set with elements containing only the common elements of both sets.
+
+Syntax/Example:
+```
+Assign("intersection_set", Intersection( SetIdentifier(Value(1), Value(2)), SetIdentifier(Value(2), Value(3)) ) ).eval
+Variable("intersection_set").eval      // returns Set(2)
+```
+
+### SetDifference(s1: SetExpression, s2: SetExpression): collection.mutable.Set[Any]
+The `SetDifference` expression takes exactly two arguments like `Union`, both of type `SetExpression`. They both must evaluate to a Set of type `mutable.Set[Any]`. This expression performs the set difference operation of two sets and return another set with elements of the first set which are not part of the second set.
+
+Syntax/Example:
+```
+Assign("set_diff_set", SetDifference( SetIdentifier(Value(1), Value(2)), SetIdentifier(Value(2), Value(3)) ) ).eval
+Variable("set_diff_set").eval      // returns Set(1)
+```
+
+### SymDifference(s1: SetExpression, s2: SetExpression): collection.mutable.Set[Any]
+The `SymDifference` expression takes exactly two arguments like `Union`, both of type `SetExpression`. They both must evaluate to a Set of type `mutable.Set[Any]`. This expression performs the set difference operation of two sets and return another set with elements which are not common between both sets.
+
+Syntax/Example:
+```
+Assign("sym_diff_set", SymDifference( SetIdentifier(Value(1), Value(2)), SetIdentifier(Value(2), Value(3)) ) ).eval
+Variable("sym_diff_set").eval      // returns Set(1, 3)
+```
+
+### CartesianProduct(s1: SetExpression, s2: SetExpression): collection.mutable.Set[Any]
+The `CartesianProduct` expression takes exactly two arguments like `Union`, both of type `SetExpression`. They both must evaluate to a Set of type `mutable.Set[Any]`. This expression performs the Cartesian product operation of two sets and return another set with elements in the form (a, b), where a is every element of first set and b is every element of second set.
+
+Syntax/Example:
+```
+Assign("cp_set", CartesianProduct( SetIdentifier(Value(1), Value(2)), SetIdentifier(Value(3), Value(4)) ) ).eval
+Variable("cp_set").eval      // returns Set( (1, 3), (1, 4), (2, 3), (2, 4) )
+```
+
+
+
+
+
+
+
