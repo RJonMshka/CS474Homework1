@@ -1,5 +1,3 @@
-import SetTheoryDSL.SetExpression.Equals
-
 import collection.mutable
 import scala.annotation.tailrec
 
@@ -98,52 +96,5 @@ object SetTheoryDSL {
         set.contains(valExp.eval)
       case Equals(exp1, exp2) => exp1.eval.equals(exp2.eval)
     }
-
-
-
-  @main def runSetTheory(): Unit = {
-    import SetExpression.*
-
-    Assign("m1", Macro(Variable("var3"))).eval
-    Assign("var1", Value("xoxo")).eval
-    Assign("var3", Value("hello1")).eval
-    Assign("set1", SetIdentifier(Value(30), Variable("var1"), ComputeMacro(Variable("m1")))).eval
-    Assign("set2", Union(SetIdentifier(Value("hello"), Value(60)), SetIdentifier(Value(5), Value(30)))).eval
-    Assign("set3", SetIdentifier()).eval
-    InsertInto("set2", Value(400)).eval
-    NamedScope("a",
-      Assign("var_a", Value("var_a_val")),
-      UnnamedScope(
-        InsertInto("set2", Variable("var_a"))
-      )
-    ).eval
-
-    NamedScope("a",
-      NamedScope("b",
-        InsertInto("set1", Variable("var_a")),
-        Assign("var_b", Value("val_b"))
-      )
-    ).eval
-
-    NamedScope("a",
-      NamedScope("b",
-        InsertInto("set1", Variable("var_b")),
-      )
-    ).eval
-
-
-    println(Variable("set2").eval)
-    println(Variable("set1").eval)
-
-    Assign("set4", SetIdentifier(Value(1), Value(2))).eval
-
-    println( Contains(Variable("set1"), Variable("var3")).eval )
-
-    println( Equals(Value("hello1"), Variable("var3")).eval )
-
-    println( Equals(Variable("set4"), SetIdentifier(Value(2) , Value(1))).eval )
-
-
-  }
 
 }
