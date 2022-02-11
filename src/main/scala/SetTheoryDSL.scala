@@ -22,7 +22,6 @@ object SetTheoryDSL {
       val scopeParent: Scope = parent
       val childScopes: mutable.Map[String, Scope] = mutable.Map()
       val bindingEnvironment: mutable.Map[String, Any] = mutable.Map()
-      val macros: mutable.Map[String, SetExpression] = mutable.Map()
     }
 
     @tailrec
@@ -44,8 +43,8 @@ object SetTheoryDSL {
       case SetDifference(setA: SetExpression, setB: SetExpression)
       case SymDifference(setA: SetExpression, setB: SetExpression)
       case CartesianProduct(setA: SetExpression, setB: SetExpression)
-      case Macro(m: String, macroExp: SetExpression)
-      case ComputeMacro(m: String)
+      case Macro(macroExp: SetExpression)
+      case ComputeMacro(macroExp: SetExpression)
       case NamedScope(scopeName: String, scopeExpArgs: SetExpression*)
       case UnnamedScope(scopeExpArgs: SetExpression*)
       case Check(setName: String, exp: SetExpression)
@@ -62,8 +61,8 @@ object SetTheoryDSL {
           val evaluatedExp = exp.eval
           currentEnvironment(index).bindingEnvironment.put(varName, evaluatedExp)
           evaluatedExp
-        case Macro(m, exp) => currentEnvironment(index).macros.put(m, exp)
-        case ComputeMacro(m) => getMacro(m, currentEnvironment(index)).eval
+        case Macro(exp) => exp
+        case ComputeMacro(exp) => exp.eval.asInstanceOf[SetExpression].eval
         case NamedScope(scopeName: String, expArgs*) =>
           // opening a new scope block
           if currentEnvironment(0).childScopes.isEmpty || !currentEnvironment(0).childScopes.contains(scopeName) then
@@ -103,23 +102,16 @@ object SetTheoryDSL {
           val storedSet = Variable(name).eval.asInstanceOf[SetType]
           setExpArgs.foreach( i => storedSet.remove(i.eval))
       }
-
-    @tailrec
-    private def getMacro(macroName: String, scopeEnv: Scope): SetExpression =
-      if (!(scopeEnv.macros.get(macroName).isEmpty && scopeEnv.scopeParent != null)) then
-        scopeEnv.macros(macroName)
-      else
-        getMacro(macroName, scopeEnv.scopeParent)
   }
 
 
 
   @main def runSetTheory(): Unit = {
     import WrapperObj.SetExpression.*
-    Macro("m1", Variable("var3")).eval
-    Assign("var1", Value(20)).eval
+    Assign("m1", Macro(Variable("var3"))).eval
+    Assign("var1", Value("xoxo")).eval
     Assign("var3", Value("sexy")).eval
-    Assign("set1", SetIdentifier(Value(30), Variable("var1"), ComputeMacro("m1"))).eval
+    Assign("set1", SetIdentifier(Value(30), Variable("var1"), ComputeMacro(Variable("m1")))).eval
     Assign("set2", Union(SetIdentifier(Value("hello"), Value(60)), SetIdentifier(Value(5), Value(30)))).eval
     Assign("set3", SetIdentifier()).eval
     InsertInto("set2", Value(400)).eval
@@ -146,10 +138,6 @@ object SetTheoryDSL {
 
     println(Variable("set2").eval)
     println(Variable("set1").eval)
-//    println(Variable("set1").eval)
-//    println(Variable("set2").eval)
-//    DeleteFrom("set2", Value(60)).eval
-//    println(Variable("set2").eval)
   }
 
 }
