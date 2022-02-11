@@ -47,9 +47,9 @@ A deep down implementation, syntax and semantics is covered in the next section.
 
 ### Common Language Syntax
 All of the expression are of type `SetExpression`.
-Each expression or instruction need to be evaluated for its working. Which means that you have to write `.eval` at the end of the outer most expression.
+Each expression or instruction need to be evaluated for its working. Which means that you have to write `.eval` at the end of the outermost expression.
 
-For example, the below code declares a variable with name `var1` and assign it a value of `1` (which is the evaluated value of `Value(3)` expression itself). Since, `Value(1)` is also an expression, but you do not need to call `eval` on it separately. You just have to call `eval` on the outer-most expression which is `Assign` in this case.
+For example, the below code declares a variable with name `var1` and assign it a value of `1` (which is the evaluated value of `Value(3)` expression itself). Since, `Value(1)` is also an expression, but you do not need to call `eval` on it separately. You just have to call `eval` on the outermost expression which is `Assign` in this case.
 ```
 Assign("var1", Value(1) ).eval
 ```
