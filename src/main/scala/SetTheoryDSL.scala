@@ -211,6 +211,12 @@ object SetTheoryDSL {
         case e: Exception => throw e
       }
       fieldsMap.put(fName, value)
+
+    def getInnerClass(cName: String): ClassStruct =
+      if objectClass.memberClasses.get(cName).isEmpty then
+        throw new Error("nested class not found")
+      else
+        objectClass.memberClasses(cName)
   }
 
   /** Enumeration for different types of Set Expressions
@@ -316,7 +322,7 @@ object SetTheoryDSL {
 
     case Param(s: String)
 
-    case ParamsExp(paramExpArgs: SetExpression.Param*)
+    case ParamsExp(paramExpArgs: SetExpression*)
 
     case Constructor(ParamsExp: SetExpression, cBodyExpArgs: SetExpression*)
 
@@ -458,24 +464,42 @@ object SetTheoryDSL {
 
       case ClassRef(cName) =>
         if currentEnvironment(0).classes.get(cName).isEmpty then
-          currentEnvironment(0).classes(cName)
-        else
           throw new Exception("Class does not exists")
+        else
+          currentEnvironment(0).classes(cName)
+
+      case ClassRefFromObject(cName, objRef) =>
+        val objectToRef = objRef.eval.asInstanceOf[ObjectStruct]
+        objectToRef.getInnerClass(cName)
+
+      case ClassRefFromClass(cName, classRef) =>
+        val outerClassRef = classRef.eval.asInstanceOf[ClassStruct]
+        if outerClassRef.memberClasses.get(cName).isEmpty then
+          throw new Exception("inner class not found")
+        else
+          outerClassRef.memberClasses(cName)
 
       case ClassDef(cName, clsExpArgs*) =>
         if currentEnvironment(0).classes.get(cName).isEmpty then
           val newClass = this.declareClass(cName, null, clsExpArgs)
-          currentEnvironment(0).classes.put(cName, this.declareClass(cName, null, clsExpArgs))
+          currentEnvironment(0).classes.put(cName, newClass)
         else
           throw new Exception("Class already exists")
 
       case ClassDefThatExtends(cName, sClass, clsExpArgs*) =>
-        val classRef = sClass.eval.asInstanceOf[ClassStruct]
-        this.declareClass(cName, classRef, clsExpArgs)
+        if currentEnvironment(0).classes.get(cName).isEmpty then
+          val superClassRef = sClass.eval.asInstanceOf[ClassStruct]
+          val newClass = this.declareClass(cName, superClassRef, clsExpArgs)
+          currentEnvironment(0).classes.put(cName, newClass)
+        else
+          throw new Exception("Class already exists")
+
 
       case ParamsExp(pExpArgs*) =>
-        val params: Seq[Any] = for p <- pExpArgs yield p.eval
+        val params = for p <- pExpArgs yield p.eval
         params
+
+      case Param(s) => s
 
       case NewObject(classRef, cArgs*) =>
         val newObject = ObjectStruct(classRef.eval.asInstanceOf[ClassStruct], cArgs)
@@ -525,19 +549,23 @@ object SetTheoryDSL {
         classRef.classFieldTypes("privateFields").add(fName)
         classRef.classFieldNames.add(fName)
       case Method(mName, args, body*) =>
-        classRef.classFieldTypes("defaultMethods").add(mName)
+        classRef.classMethodsTypes("defaultMethods").add(mName)
         classRef.classMethodMap.put(mName, MethodStruct(args, body))
       case PublicMethod(mName, args, body*) =>
-        classRef.classFieldTypes("publicMethods").add(mName)
+        classRef.classMethodsTypes("publicMethods").add(mName)
         classRef.classMethodMap.put(mName, MethodStruct(args, body))
       case ProtectedMethod(mName, args, body*) =>
-        classRef.classFieldTypes("protectedMethods").add(mName)
+        classRef.classMethodsTypes("protectedMethods").add(mName)
         classRef.classMethodMap.put(mName, MethodStruct(args, body))
       case PrivateMethod(mName, args, body*) =>
-        classRef.classFieldTypes("privateMethods").add(mName)
+        classRef.classMethodsTypes("privateMethods").add(mName)
         classRef.classMethodMap.put(mName, MethodStruct(args, body))
       case ClassDef(cName, clsExpArgs*) =>
         val innerClass = this.declareClass(cName, null, clsExpArgs)
+        classRef.memberClasses.put(cName, innerClass)
+      case ClassDefThatExtends(cName, sClass, clsExpArgs*) =>
+        val superClassRef = sClass.eval.asInstanceOf[ClassStruct]
+        val innerClass = this.declareClass(cName, superClassRef, clsExpArgs)
         classRef.memberClasses.put(cName, innerClass)
       case ClassRef(cName) => this.eval
     }
@@ -563,6 +591,38 @@ object SetTheoryDSL {
    * Main Function, entry point to the application
    */
   @main def runSetTheoryDSL(): Unit = {
+    import SetExpression.*
+
+    ClassDef(
+      "TopClass",
+      CreatePublicField("f1"),
+      CreatePublicField("f2"),
+      Constructor(
+        ParamsExp(Param("x"), Param("y")),
+        SetField("f1", Variable("x")),
+        SetField("f2", Variable("y"))
+      ),
+      PublicMethod(
+        "set_f_to_params",
+        ParamsExp(Param("a"), Param("b")),
+        SetField("f1", Variable("a")),
+        SetField("f1", Variable("b"))
+      ),
+      PublicMethod(
+        "get_f1",
+        ParamsExp(),
+        Field("f1")
+      ),
+      PublicMethod(
+        "get_f2",
+        ParamsExp(),
+        Field("f2")
+      )
+
+    ).eval
+
+    Assign("obj1", NewObject( ClassRef("TopClass"), Value(1), Value(2) )).eval
+    println( InvokeMethodOfObject("get_f1", Variable("obj1")).eval )
     println("program runs successfully")
   }
 
