@@ -1,5 +1,5 @@
 /** Important imports */
-import SetTheoryDSL.SetExpression.{Constructor, CreatePrivateField, CreateProtectedField, CreatePublicField, Param, PublicMethod}
+import SetTheoryDSL.SetExpression.{Constructor, CreatePrivateField, CreateProtectedField, CreatePublicField, Param, PublicMethod, SetFieldFromObject}
 import SetTheoryDSL.mutMapSetExp
 import com.sun.org.apache.bcel.internal.ExceptionConst.EXCS
 
@@ -110,15 +110,10 @@ object SetTheoryDSL {
   ) {
     val objectClass = classRef
     val paramValues: Seq[Any] = (for p <- constructorArgs yield p.eval)
-    executeConstructor(classRef, paramValues)
     var fieldsMap: mutable.Map[String, Any] = mutable.Map()
+    executeConstructor(objectClass, paramValues)
 
-    // now excecuting all constructor expressions
-    constructorArgs.foreach( _.eval )
-
-
-
-    def executeConstructor(classRef: ClassStruct, paramValues: Seq[Any]): Unit =
+    private def executeConstructor(classRef: ClassStruct, paramValues: Seq[Any]): Unit =
       if classRef.parentClass != null then executeConstructor(classRef.parentClass, paramValues)
       // recursively go to the top most class
 
@@ -147,7 +142,7 @@ object SetTheoryDSL {
       // Evaluating every expression in that constructor
       classRef.classConstructor("constructor").methodBody.foreach( _.eval )
 
-      // once done executing
+      // once done executing - no need to remove the params from currentEnv
       currentEnvironment(index) = currentEnvironment(index).scopeParent
 
     // this method is for invoking class methods from within the body of the class or object
@@ -199,8 +194,23 @@ object SetTheoryDSL {
       else
         throw new Exception("method not found")
 
+    def getField(fName: String, requestFromOutside: Boolean): Any =
+      // fields are not going to be inherited so no need to look up the class chain
+      if !objectClass.classFieldNames.contains(fName) then
+        throw new Exception("no such field exist")
+      else if requestFromOutside && (objectClass.classFieldTypes("defaultFields").contains(fName) || objectClass.classFieldTypes("privateFields").contains(fName)) then
+        // it means that access to private and default are forbidden
+        throw new Exception("access to private or default fields from outside is not permitted")
+      else
+        fieldsMap(fName)
 
-
+    def setField(fName: String, value: Any, requestFromOutside: Boolean): Unit =
+      try {
+        getField(fName, requestFromOutside)
+      } catch {
+        case e: Exception => throw e
+      }
+      fieldsMap.put(fName, value)
   }
 
   /** Enumeration for different types of Set Expressions
@@ -299,6 +309,10 @@ object SetTheoryDSL {
     case ClassDefThatExtends(cName: String, superClass: SetExpression.ClassRef, classExpArgs: SetExpression*)
 
     case ClassRef(className: String)
+
+    case ClassRefFromObject(className: String, objRef: SetExpression)
+
+    case ClassRefFromClass(className: String, classRef: SetExpression)
 
     case Param(s: String)
 
@@ -475,6 +489,24 @@ object SetTheoryDSL {
         val currentObject = objectRef.eval
         currentEnvironment(index).bindingEnvironment.put("this", currentObject)
         currentObject.asInstanceOf[ObjectStruct].invokeMethod(mName, params, true)
+
+      case Field(fName) =>
+        val currentObject = currentEnvironment(index).bindingEnvironment("this")
+        currentObject.asInstanceOf[ObjectStruct].getField(fName, false)
+
+      case FieldFromObject(fName, objRef) =>
+        val currentObject = objRef.eval
+        currentEnvironment(index).bindingEnvironment.put("this", currentObject)
+        currentObject.asInstanceOf[ObjectStruct].getField(fName, true)
+
+      case SetField(fName, exp) =>
+        val currentObject = currentEnvironment(index).bindingEnvironment("this")
+        currentObject.asInstanceOf[ObjectStruct].setField(fName, exp.eval, false)
+
+      case SetFieldFromObject(fName, objRef, exp) =>
+        val currentObject = objRef.eval
+        currentEnvironment(index).bindingEnvironment.put("this", currentObject)
+        currentObject.asInstanceOf[ObjectStruct].setField(fName, exp.eval, true)
     }
 
     private def resolveClassMembers(classRef: ClassStruct): Any = this match {
