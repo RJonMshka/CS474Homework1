@@ -1,12 +1,21 @@
 /** Important imports */
+import SetTheoryDSL.SetExpression.{Constructor, CreatePrivateField, CreateProtectedField, CreatePublicField, Param, PublicMethod}
+import SetTheoryDSL.mutMapSetExp
+import com.sun.org.apache.bcel.internal.ExceptionConst.EXCS
+
 import collection.mutable
 import scala.annotation.tailrec
+import scala.language.postfixOps
 
 /** Factory for [[SetTheoryDSL]] instances. */
 object SetTheoryDSL {
 
   /** Create a name for type mutable sets */
   type SetType = mutable.Set[Any]
+  type SetStringType = mutable.Set[String]
+  type mutMapAny = mutable.Map[String, Any]
+  type mutMapSetExp = mutable.Map[String, SetExpression]
+  private type methodMapType = mutable.Map[String, MethodStruct]
 
   /** A Scope which is used to create a binding environment
    *
@@ -20,7 +29,58 @@ object SetTheoryDSL {
     // This field holds the child Scope in a HashMap of particular Scope Object
     val childScopes: mutable.Map[String, Scope] = mutable.Map()
     // This field holds the binding environment (binding variables) in a HashMap referring to the referencing environment of that particular Scope object
-    val bindingEnvironment: mutable.Map[String, Any] = mutable.Map()
+    val bindingEnvironment: mutMapAny = mutable.Map()
+    val classes: mutable.Map[String, ClassStruct] = mutable.Map()
+  }
+
+  private def createClassFieldsMap(): Map[String, SetStringType] =
+    Map(
+      "defaultFields" -> mutable.Set(),
+      "publicFields" -> mutable.Set(),
+      "protectedFields" -> mutable.Set(),
+      "privateFields" -> mutable.Set()
+    )
+
+  private def createClassConstructorMap(constructor: MethodStruct = null): methodMapType =
+    mutable.Map[String, MethodStruct](
+      "constructor" -> constructor
+    )
+
+  private def createClassMethodsMap(): Map[String, SetStringType] =
+    Map(
+      "defaultMethods" -> mutable.Set(),
+      "publicMethods" -> mutable.Set(),
+      "protectedMethods" -> mutable.Set(),
+      "privateMethods" -> mutable.Set()
+    )
+
+
+  private class ClassStruct(
+    cName: String,
+    constructor: methodMapType,
+    fields: Map[String, SetStringType],
+    methods: Map[String, SetStringType],
+    innerClasses: mutable.Map[String, ClassStruct],
+    parent: ClassStruct
+  ) {
+    val className = cName
+    val classConstructor: methodMapType = constructor
+    val classFieldTypes: Map[String, SetStringType] = fields
+    val classFieldNames = mutable.Set[String]()
+    val classMethodsTypes: Map[String, SetStringType] = methods
+    val classMethodMap = mutable.Map[String, MethodStruct]()
+    val memberClasses: mutable.Map[String, ClassStruct] = innerClasses
+    val parentClass: ClassStruct = parent
+  }
+
+
+
+  private class MethodStruct(
+    args: SetExpression,
+    body: Seq[SetExpression]
+  ) {
+    val argExp = args
+    val methodBody = body
   }
 
 
@@ -43,6 +103,105 @@ object SetTheoryDSL {
   // Creating a global scope whose parent is null
   currentEnvironment(index) = new Scope("globalScope", null)
 
+
+  private class ObjectStruct(
+    classRef: ClassStruct,
+    constructorArgs: Seq[SetExpression]
+  ) {
+    val objectClass = classRef
+    val paramValues: Seq[Any] = (for p <- constructorArgs yield p.eval)
+    executeConstructor(classRef, paramValues)
+    var fieldsMap: mutable.Map[String, Any] = mutable.Map()
+
+    // now excecuting all constructor expressions
+    constructorArgs.foreach( _.eval )
+
+
+
+    def executeConstructor(classRef: ClassStruct, paramValues: Seq[Any]): Unit =
+      if classRef.parentClass != null then executeConstructor(classRef.parentClass, paramValues)
+      // recursively go to the top most class
+
+      // clearing the current fieldmap - will for populated for the top most object - fields are not inherited
+      fieldsMap.clear()
+      // initializing all fields to a value of zero
+      classRef.classFieldNames.foreach(fieldsMap.put( _, 0))
+      // these names can be different for different super constructors
+      val paramNames = classRef.classConstructor("constructor").argExp.eval.asInstanceOf[Seq[Any]]
+      val paramsMap: mutable.Map[String, Any] = mutable.Map()
+      // but their number should be same
+      if paramNames.size != paramValues.size then
+        throw new Exception("Number of params do not match")
+      else
+        for i <- 0 until paramNames.size do paramsMap += ( paramNames(i).asInstanceOf[String] -> paramValues(i) )
+
+      // creating a constructor scope
+      // switching the current environment to the new scope
+      currentEnvironment(index) = new Scope(null, currentEnvironment(index))
+
+      // adding this ref to scope
+      currentEnvironment(index).bindingEnvironment.put("this", this)
+
+      // adding params map to current referencing env
+      currentEnvironment(index).bindingEnvironment ++= paramsMap
+      // Evaluating every expression in that constructor
+      classRef.classConstructor("constructor").methodBody.foreach( _.eval )
+
+      // once done executing
+      currentEnvironment(index) = currentEnvironment(index).scopeParent
+
+    // this method is for invoking class methods from within the body of the class or object
+    // this means that the method is either called from constructor or some other method from outside
+    def invokeMethod(mName: String, mParams: Seq[SetExpression], isCalledFromOutside: Boolean): Any =
+      // have to do Dynamic dispatch here
+      val methodToCall = dynamicDispatch(mName, objectClass, isCalledFromOutside)
+      // creating a scope for particular method
+      val methodParamNames = methodToCall.argExp.eval.asInstanceOf[Seq[Any]]
+      val methodParamValues: Seq[Any] = (for p <- mParams yield p.eval)
+      val paramsMap: mutable.Map[String, Any] = mutable.Map()
+      if methodParamNames.size != methodParamValues.size then
+        throw new Exception("Number of params do not match")
+      else
+        for i <- 0 until methodParamNames.size do paramsMap += ( methodParamNames(i).asInstanceOf[String] -> methodParamValues(i) )
+
+      currentEnvironment(index) = new Scope(null, currentEnvironment(index))
+
+      // adding object ref to scope
+      currentEnvironment(index).bindingEnvironment.put("this", this)
+
+      // adding params map to current referencing env
+      currentEnvironment(index).bindingEnvironment ++= paramsMap
+      // Evaluating every expression in that constructor
+      val lastCallReturn: mutable.Map[String, Any] = mutable.Map()
+      for expIndex <- 0 until methodToCall.methodBody.size do
+        val evaluatedExp = methodToCall.methodBody(expIndex).eval
+
+        // handle last call case
+        if expIndex == methodToCall.methodBody.size - 1 then
+          lastCallReturn.put("return", evaluatedExp)
+
+      // once done executing
+      currentEnvironment(index) = currentEnvironment(index).scopeParent
+      // return the value
+      lastCallReturn("return")
+
+    private def dynamicDispatch(mName: String, classRef: ClassStruct, isCalledFromOutside: Boolean): MethodStruct =
+      if !classRef.classMethodMap.keys.toSet.contains(mName) && classRef.parentClass != null then
+        dynamicDispatch(mName, classRef.parentClass, isCalledFromOutside)
+      else if classRef.classMethodMap.keys.toSet.contains(mName) && isCalledFromOutside then
+        // check if either default or private member
+        if classRef.classMethodsTypes("defaultMethods").contains(mName) || classRef.classMethodsTypes("privateMethods").contains(mName) then
+          throw new Exception("cannot access private or default method from an object")
+        else
+          classRef.classMethodMap(mName)
+      else if classRef.classMethodMap.keys.toSet.contains(mName) && !isCalledFromOutside then
+        classRef.classMethodMap(mName)
+      else
+        throw new Exception("method not found")
+
+
+
+  }
 
   /** Enumeration for different types of Set Expressions
    *
@@ -134,6 +293,49 @@ object SetTheoryDSL {
      * equates evaluated value of exp1 with evaluated value of exp2
      */
     case Equals(exp1: SetExpression, exp2: SetExpression)
+
+    case ClassDef(className: String, classExpArgs: SetExpression*)
+
+    case ClassDefThatExtends(cName: String, superClass: SetExpression.ClassRef, classExpArgs: SetExpression*)
+
+    case ClassRef(className: String)
+
+    case Param(s: String)
+
+    case ParamsExp(paramExpArgs: SetExpression.Param*)
+
+    case Constructor(ParamsExp: SetExpression, cBodyExpArgs: SetExpression*)
+
+    case Field(fieldName: String)
+
+    case FieldFromObject(fieldName: String, obj: SetExpression)
+
+    case SetField(fieldName: String, exp: SetExpression)
+
+    case SetFieldFromObject(fieldName: String, obj: SetExpression, exp: SetExpression)
+
+    case CreateField(fieldName: String)
+
+    case CreatePublicField(fieldName: String)
+
+    case CreateProtectedField(fieldName: String)
+
+    case CreatePrivateField(fieldName: String)
+
+    case InvokeMethod(methodName: String, params: SetExpression*)
+
+    case InvokeMethodOfObject(mName: String, objRef: SetExpression, params: SetExpression*)
+
+    case Method(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+
+    case PublicMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+
+    case ProtectedMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+
+    case PrivateMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+
+    case NewObject(classRef: SetExpression.ClassRef, constructorArgs: SetExpression*)
+
 
     /** This method evaluates SetExpressions
      *  Description - The body of this method is the implementation of above abstract data types
@@ -239,7 +441,91 @@ object SetTheoryDSL {
 
       // Equals Expression Implementation
       case Equals(exp1, exp2) => exp1.eval.equals(exp2.eval)
+
+      case ClassRef(cName) =>
+        if currentEnvironment(0).classes.get(cName).isEmpty then
+          currentEnvironment(0).classes(cName)
+        else
+          throw new Exception("Class does not exists")
+
+      case ClassDef(cName, clsExpArgs*) =>
+        if currentEnvironment(0).classes.get(cName).isEmpty then
+          val newClass = this.declareClass(cName, null, clsExpArgs)
+          currentEnvironment(0).classes.put(cName, this.declareClass(cName, null, clsExpArgs))
+        else
+          throw new Exception("Class already exists")
+
+      case ClassDefThatExtends(cName, sClass, clsExpArgs*) =>
+        val classRef = sClass.eval.asInstanceOf[ClassStruct]
+        this.declareClass(cName, classRef, clsExpArgs)
+
+      case ParamsExp(pExpArgs*) =>
+        val params: Seq[Any] = for p <- pExpArgs yield p.eval
+        params
+
+      case NewObject(classRef, cArgs*) =>
+        val newObject = ObjectStruct(classRef.eval.asInstanceOf[ClassStruct], cArgs)
+        newObject
+
+      case InvokeMethod(mName, params*) =>
+        val currentObject = currentEnvironment(index).bindingEnvironment("this")
+        currentObject.asInstanceOf[ObjectStruct].invokeMethod(mName, params, false)
+
+      case InvokeMethodOfObject(mName, objectRef, params*) =>
+        val currentObject = objectRef.eval
+        currentEnvironment(index).bindingEnvironment.put("this", currentObject)
+        currentObject.asInstanceOf[ObjectStruct].invokeMethod(mName, params, true)
     }
+
+    private def resolveClassMembers(classRef: ClassStruct): Any = this match {
+      case Constructor(pExp, body*) =>
+        classRef.classConstructor.put("constructor", MethodStruct(pExp, body))
+      case CreateField(fName) =>
+        classRef.classFieldTypes("defaultFields").add(fName)
+        classRef.classFieldNames.add(fName)
+      case CreatePublicField(fName) =>
+        classRef.classFieldTypes("publicFields").add(fName)
+        classRef.classFieldNames.add(fName)
+      case CreateProtectedField(fName) =>
+        classRef.classFieldTypes("protectedFields").add(fName)
+        classRef.classFieldNames.add(fName)
+      case CreatePrivateField(fName) =>
+        classRef.classFieldTypes("privateFields").add(fName)
+        classRef.classFieldNames.add(fName)
+      case Method(mName, args, body*) =>
+        classRef.classFieldTypes("defaultMethods").add(mName)
+        classRef.classMethodMap.put(mName, MethodStruct(args, body))
+      case PublicMethod(mName, args, body*) =>
+        classRef.classFieldTypes("publicMethods").add(mName)
+        classRef.classMethodMap.put(mName, MethodStruct(args, body))
+      case ProtectedMethod(mName, args, body*) =>
+        classRef.classFieldTypes("protectedMethods").add(mName)
+        classRef.classMethodMap.put(mName, MethodStruct(args, body))
+      case PrivateMethod(mName, args, body*) =>
+        classRef.classFieldTypes("privateMethods").add(mName)
+        classRef.classMethodMap.put(mName, MethodStruct(args, body))
+      case ClassDef(cName, clsExpArgs*) =>
+        val innerClass = this.declareClass(cName, null, clsExpArgs)
+        classRef.memberClasses.put(cName, innerClass)
+      case ClassRef(cName) => this.eval
+    }
+
+    private def declareClass(cName: String, parent: ClassStruct, classBody: Seq[SetExpression]): ClassStruct =
+      val constructorMap: methodMapType = createClassConstructorMap()
+      val fieldsMap: Map[String, SetStringType] = createClassFieldsMap()
+      val methodsMap: Map[String, SetStringType] = createClassMethodsMap()
+      val nestedClasses: mutable.Map[String, ClassStruct] = mutable.Map()
+      val newClassRef = ClassStruct(
+        cName,
+        constructorMap,
+        fieldsMap,
+        methodsMap,
+        nestedClasses,
+        parent
+      )
+      classBody.foreach( _.resolveClassMembers(newClassRef) )
+      newClassRef
+
 
   /**
    * Main Function, entry point to the application
