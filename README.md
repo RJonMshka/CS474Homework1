@@ -469,3 +469,269 @@ ClassDef(
 The first argument of the Constructor are ParamsExp Expression representing what kind of signature is used to instantiate objects. Other params are expression which are part of constructor body and are though of as instructions.
 When an object is instantiated, the OO mechanism goes to the top most class first and initiate's its fields and then invoke top class's constructor with the params passed. If the signature (number of params) of Constructor and the params values do not match then it would result in an `Exception`.
 
+### Field(fieldName: String): Any
+`Field` expression is used to refer to a field of an object with its name within the body of the class. Usage of this expression on object intance outside body of class is prohibited. We have another expression for that behavior.
+
+Syntax:
+```
+Field("fieldName")
+```
+
+Usage (example: Class Method)
+```
+ClassDef(
+    "Class1",                      
+    CreatePublicField("f1"),
+    Constructor(
+        ParamsExp( Param("v1")), 
+        SetField("f1", Variable("v1")) 
+    ),
+    PublicMethod(
+        "m1",
+        ParamsExp(),
+        Field("f1")                       // Public method m1 will return value of Field f1 once invoked
+    )
+).eval
+```
+
+### SetField(fieldName: String, exp: SetExpression)
+This expression is used to set the value of field. The value to set is determined by the second argument which is SetExpression which evaluates to the value needed to be set for the field.
+
+Usage:
+```
+ClassDef(
+    "Class1",                      
+    CreatePublicField("f1"),
+    Constructor(
+        ParamsExp( Param("v1")), 
+        SetField("f1", Variable("v1"))       // sets field "f1" to the param "v1" passed to Constructor
+    )
+).eval
+```
+
+### CreateField(fieldName: String)
+`CreateField` is used to create a field for class. This field has default access which means that it cannot be accessed outside directly and will not be inherited.
+
+Usage:
+```
+ClassDef(
+    "Class1",                      
+    CreateField("f1"),         // Creation of default field "f1"
+    Constructor(
+        ParamsExp( Param("v1")), 
+        SetField("f1", Variable("v1"))
+    )
+).eval
+```
+
+### CreatePublicField(fieldName: String)
+`CreatePublicField` is similar to `CreateField` and is used to create a field for class. This field has public access which means that it can be accessed outside directly and will be inherited.
+
+Usage:
+```
+ClassDef(
+    "Class1",                      
+    CreatePublicField("f1"),         // Creation of public field "f1"
+    Constructor(
+        ParamsExp( Param("v1")), 
+        SetField("f1", Variable("v1"))
+    )
+).eval
+```
+
+### CreateProtectedField(fieldName: String)
+`CreateProtectedField` is similar to `CreateField` and is used to create a field for class. This field has protected access which means that it cannot be accessed outside directly but will be inherited.
+
+Usage:
+```
+ClassDef(
+    "Class1",                      
+    CreateProtectedField("f1"),         // Creation of protected field "f1"
+    Constructor(
+        ParamsExp( Param("v1")), 
+        SetField("f1", Variable("v1"))
+    )
+).eval
+```
+
+### CreatePrivateField(fieldName: String)
+`CreatePrivateField` is similar to `CreateField` and is used to create a field for class. This field has private access which means that it cannot be accessed outside directly and will not be inherited by any sub-class.
+
+Usage:
+```
+ClassDef(
+    "Class1",                      
+    CreatePrivateField("f1"),         // Creation of private field "f1"
+    Constructor(
+        ParamsExp( Param("v1")), 
+        SetField("f1", Variable("v1"))
+    )
+).eval
+```
+
+### Method(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+`Method` Expression is used to create a method with name `methodName` for the class. `argExp` is the set of params that this method needs to be invoked and `mBodyExpArgs` are the expression of its body or we can say that they are instructions of the method.
+`Method` creates a method with default access modiifer which means that it cannot be accessed/invoked outside class's body directly and will not be inherited by any sub-class.
+The last expression of method body will specify its return type.
+
+Usage:
+```
+ClassDef(
+    "Class1",                      
+    CreatePrivateField("f1"),       
+    Constructor(
+        ParamsExp( Param("v1")), 
+        SetField("f1", Variable("v1"))
+    ),
+    Method(
+       "m1",                                                        // method name "m1"
+       ParamsExp( Param("x")),                                      // param signature for method
+       SetField("f1", Variable("x")),                               // start of method body
+       Field("f1")                                              // end of method body - last expression, so this method return value of field "f1"
+    )
+).eval
+```
+
+### PublicMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+`PublicMethod` Expression is similar to `Method`.
+`PublicMethod` creates a method with public access modiifer which means that it can be accessed/invoked outside class's body directly and can be inherited by any sub-class.
+The last expression of method body will specify its return type.
+
+Usage:
+```
+ClassDef(
+    "Class1",                      
+    CreatePrivateField("f1"),         
+    Constructor(
+        ParamsExp( Param("v1")), 
+        SetField("f1", Variable("v1"))
+    ),
+    PublicMethod(
+       "m1",                                                        // method name "m1"
+       ParamsExp( Param("x")),                                      // param signature for method
+       SetField("f1", Variable("x")),                               // start of method body
+       Field("f1")                                              // end of method body - last expression, so this method return value of field "f1"
+    )
+).eval
+```
+
+### ProtectedMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+`ProtectedMethod` Expression is similar to `Method`.
+`ProtectedMethod` creates a method with protected access modiifer which means that it cannot be accessed/invoked outside class's body directly but can be inherited by any sub-class.
+The last expression of method body will specify its return type.
+
+Usage:
+```
+ClassDef(
+    "Class1",                      
+    CreatePrivateField("f1"),         
+    Constructor(
+        ParamsExp( Param("v1")), 
+        SetField("f1", Variable("v1"))
+    ),
+    ProtectedMethod(
+       "m1",                                                        // method name "m1"
+       ParamsExp( Param("x")),                                      // param signature for method
+       SetField("f1", Variable("x")),                               // start of method body
+       Field("f1")                                              // end of method body - last expression, so this method return value of field "f1"
+    )
+).eval
+```
+
+### PrivateMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+PrivateMethod` Expression is similar to `Method`.
+`PrivateMethod` creates a method with private access modiifer which means that it cannot be accessed/invoked outside class's body directly and also cannot be inherited by any sub-class.
+The last expression of method body will specify its return type.
+
+Usage:
+```
+ClassDef(
+    "Class1",                      
+    CreatePrivateField("f1"),         
+    Constructor(
+        ParamsExp( Param("v1")), 
+        SetField("f1", Variable("v1"))
+    ),
+    PrivateMethod(
+       "m1",                                                        // method name "m1"
+       ParamsExp( Param("x")),                                      // param signature for method
+       SetField("f1", Variable("x")),                               // start of method body
+       Field("f1")                                              // end of method body - last expression, so this method return value of field "f1"
+    )
+).eval
+```
+
+### NewObject(classRef: SetExpression, constructorArgs: SetExpression*): ObjectStruct
+`NewObject` Expression is used to create new DSL objects out of a class. `classRef` evaluates to a ClassStruct reference. `constructorArgs` is a sequence of Expressions that will get passed as argument to class's constructor. Any mismatch in size passed and size expected would result in an `Exception`.
+
+Syntax and Example:
+```
+NewObject( ClassRef("ClassOne"), Value(1) ).eval    // creates a new object by instantiating class ClassOne
+```
+
+One use case:
+```
+ClassDef(
+    "Class1",                      
+    CreatePublicField("f1"),         
+    Constructor(
+        ParamsExp( Param("v1")), 
+        SetField("f1", Variable("v1"))
+    )
+).eval
+
+Assign("object1", NewObject( ClassRef("Class1"), Value(20) )).eval     // assigns the object into a variable named "object1" which can be refered again in the code
+```
+
+### ClassRefFromObject(className: String, objRef: SetExpression)
+`ClassRefFromObject` is used to refer to an inner class of the outer class such that the known object is an instance of the outer class. This type of object can still refer to inner classes of its own class.
+
+Syntax and Example:
+```
+ClassRefFromObject("Class2", Variable("object1")).eval      // refering to inner class "Class2" of the class whose instance is the object that Variable("object1") refers to
+```
+
+Usage - Creating object from inner class:
+```
+ClassDef(
+    "OuterClass",                      // normal class creation
+    CreatePublicField("f1"),
+    Constructor(
+        ParamsExp(),
+        SetField("f1", Value("field_value"))
+    ),
+    ClassDef(                          // creating an inner class named "InnerClass"
+        "InnerClass",
+        CreatePublicField("f2"),
+        Constructor(
+            ParamsExp(),
+            SetField("f2", Value("inner_field_value"))
+        )
+    )
+).eval
+
+Assign("obj1", NewObject( ClassRef("OuterClass") )).eval     // instance of outer class
+
+// we will use the above object to create an object of "InnerClass" using "ClassRefFromObject" Expression
+
+Assign("obj2", NewObject( ClassRefFromObject( "InnerClass", Variable("obj1) ) )).eval      // object of InnerClass
+```
+
+### FieldFromObject(fieldName: String, obj: SetExpression)
+`FieldFromObject` is similar to `Field`. But it enables the user to access public fields of any object from the object itself.
+Any attempt to use `FieldFromObject` for accessing default, protected or private fields will result in an `Exception`.
+
+Syntax and Example:
+```
+ClassDef(
+    "Class1",                      // normal class creation
+    CreatePublicField("f1"),
+    Constructor(
+        ParamsExp(),
+        SetField("f1", Value("field_value"))
+    )
+).eval
+Assign("obj1", NewObject( ClassRef("Class1") )).eval 
+
+FieldFromObject("f1", Variable("obj1")).eval     // returns "field_value"
+```
