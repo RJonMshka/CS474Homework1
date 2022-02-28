@@ -62,12 +62,12 @@ object SetTheoryDSL {
     innerClasses: mutable.Map[String, ClassStruct],
     parent: ClassStruct
   ) {
-    val className = cName
+    val className: String = cName
     val classConstructor: methodMapType = constructor
     val classFieldTypes: Map[String, SetStringType] = fields
-    val classFieldNames = mutable.Set[String]()
+    val classFieldNames: mutable.Set[String] = mutable.Set()
     val classMethodsTypes: Map[String, SetStringType] = methods
-    val classMethodMap = mutable.Map[String, MethodStruct]()
+    val classMethodMap: mutable.Map[String, MethodStruct] = mutable.Map()
     val memberClasses: mutable.Map[String, ClassStruct] = innerClasses
     val parentClass: ClassStruct = parent
   }
@@ -78,8 +78,8 @@ object SetTheoryDSL {
     args: SetExpression,
     body: Seq[SetExpression]
   ) {
-    val argExp = args
-    val methodBody = body
+    val argExp: SetExpression = args
+    val methodBody: Seq[SetExpression] = body
   }
 
 
@@ -102,13 +102,23 @@ object SetTheoryDSL {
   // Creating a global scope whose parent is null
   currentEnvironment(index) = new Scope("globalScope", null)
 
+  @tailrec
+  private def getClassRef(cName: String, scopeEnv: Scope): Any =
+    if scopeEnv.classes.contains(cName) then
+      // class exist in this scope
+      scopeEnv.classes(cName)
+    else if scopeEnv.scopeParent == null then
+      null
+    else
+      getClassRef(cName, scopeEnv.scopeParent)
+
 
   private class ObjectStruct(
     classRef: ClassStruct,
     constructorArgs: Seq[SetExpression]
   ) {
-    val objectClass = classRef
-    val paramValues: Seq[Any] = (for p <- constructorArgs yield p.eval)
+    val objectClass: ClassStruct = classRef
+    val paramValues: Seq[Any] = for p <- constructorArgs yield p.eval
     val fieldsMap: mutable.Map[String, Any] = mutable.Map()
     val inheritedFieldMap: mutable.Map[String, Any] = mutable.Map()
     val publicFields: mutable.Set[String] = mutable.Set()
@@ -132,7 +142,7 @@ object SetTheoryDSL {
       if paramNames.size != paramValues.size then
         throw new Exception("Number of params do not match")
       else
-        for i <- 0 until paramNames.size do paramsMap += ( paramNames(i).asInstanceOf[String] -> paramValues(i) )
+        for i <- paramNames.indices do paramsMap += ( paramNames(i).asInstanceOf[String] -> paramValues(i) )
 
       // creating a constructor scope
       // switching the current environment to the new scope
@@ -147,11 +157,11 @@ object SetTheoryDSL {
       classRef1.classConstructor("constructor").methodBody.foreach( _.eval )
 
       // updating the inherited field map and public/protected inherited set
-      classRef1.classFieldTypes("publicFields").foreach( item =>
-        if !fieldsMap.get(item).isEmpty then inheritedFieldMap.put(item, fieldsMap(item))
+      classRef1.classFieldTypes("publicFields").foreach( key =>
+        if fieldsMap.contains(key) then inheritedFieldMap.put(key, fieldsMap(key))
       )
-      classRef1.classFieldTypes("protectedFields").foreach( item =>
-        if !fieldsMap.get(item).isEmpty then inheritedFieldMap.put(item, fieldsMap(item))
+      classRef1.classFieldTypes("protectedFields").foreach( key =>
+        if fieldsMap.contains(key) then inheritedFieldMap.put(key, fieldsMap(key))
       )
 
 
@@ -166,12 +176,12 @@ object SetTheoryDSL {
       val methodToCall = dynamicDispatch(mName, objectClass, isCalledFromOutside)
       // creating a scope for particular method
       val methodParamNames = methodToCall.argExp.eval.asInstanceOf[Seq[Any]]
-      val methodParamValues: Seq[Any] = (for p <- mParams yield p.eval)
+      val methodParamValues: Seq[Any] = for p <- mParams yield p.eval
       val paramsMap: mutable.Map[String, Any] = mutable.Map()
       if methodParamNames.size != methodParamValues.size then
         throw new Exception("Number of params do not match")
       else
-        for i <- 0 until methodParamNames.size do paramsMap += ( methodParamNames(i).asInstanceOf[String] -> methodParamValues(i) )
+        for i <- methodParamNames.indices do paramsMap += ( methodParamNames(i).asInstanceOf[String] -> methodParamValues(i) )
 
       currentEnvironment(index) = new Scope(null, currentEnvironment(index))
 
@@ -182,7 +192,7 @@ object SetTheoryDSL {
       currentEnvironment(index).bindingEnvironment ++= paramsMap
       // Evaluating every expression in that constructor
       val lastCallReturn: mutable.Map[String, Any] = mutable.Map()
-      for expIndex <- 0 until methodToCall.methodBody.size do
+      for expIndex <- methodToCall.methodBody.indices do
         val evaluatedExp = methodToCall.methodBody(expIndex).eval
 
         // handle last call case
@@ -191,9 +201,12 @@ object SetTheoryDSL {
 
       // once done executing
       currentEnvironment(index) = currentEnvironment(index).scopeParent
+      // remove the scope of this
+      currentEnvironment(index).bindingEnvironment -= "this"
       // return the value
       lastCallReturn("return")
 
+    @tailrec
     private def dynamicDispatch(mName: String, classRef1: ClassStruct, isCalledFromOutside: Boolean): MethodStruct =
       if !classRef1.classMethodMap.keys.toSet.contains(mName) && classRef1.parentClass != null then
         dynamicDispatch(mName, classRef1.parentClass, isCalledFromOutside)
@@ -231,13 +244,15 @@ object SetTheoryDSL {
         case e: Exception => throw e
       }
       fieldsMap.put(fName, value)
-      println(fieldsMap)
 
     def getInnerClass(cName: String): ClassStruct =
-      if objectClass.memberClasses.get(cName).isEmpty then
+      if !objectClass.memberClasses.contains(cName) then
         throw new Error("nested class not found")
       else
         objectClass.memberClasses(cName)
+
+    def isInstanceOf(cRef: ClassStruct): Boolean =
+      cRef == objectClass
   }
 
   /** Enumeration for different types of Set Expressions
@@ -375,7 +390,9 @@ object SetTheoryDSL {
 
     case PrivateMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
 
-    case NewObject(classRef: SetExpression.ClassRef, constructorArgs: SetExpression*)
+    case NewObject(classRef: SetExpression, constructorArgs: SetExpression*)
+
+    case ObjectInstanceOf(objectRef: SetExpression, classRef: SetExpression)
 
 
     /** This method evaluates SetExpressions
@@ -484,10 +501,11 @@ object SetTheoryDSL {
       case Equals(exp1, exp2) => exp1.eval.equals(exp2.eval)
 
       case ClassRef(cName) =>
-        if currentEnvironment(0).classes.get(cName).isEmpty then
-          throw new Exception("Class does not exists")
+        val clsRef = getClassRef(cName, currentEnvironment(index))
+        if clsRef == null then
+          throw new Exception(cName + " class does not exists.")
         else
-          currentEnvironment(0).classes(cName)
+          clsRef
 
       case ClassRefFromObject(cName, objRef) =>
         val objectToRef = objRef.eval.asInstanceOf[ObjectStruct]
@@ -501,19 +519,21 @@ object SetTheoryDSL {
           outerClassRef.memberClasses(cName)
 
       case ClassDef(cName, clsExpArgs*) =>
-        if currentEnvironment(0).classes.get(cName).isEmpty then
+        val clsRef = getClassRef(cName, currentEnvironment(index))
+        if clsRef == null then
           val newClass = this.declareClass(cName, null, clsExpArgs)
           currentEnvironment(0).classes.put(cName, newClass)
         else
-          throw new Exception("Class already exists")
+          throw new Exception(cName + " class already exists.")
 
       case ClassDefThatExtends(cName, sClass, clsExpArgs*) =>
-        if currentEnvironment(0).classes.get(cName).isEmpty then
+        val clsRef = getClassRef(cName, currentEnvironment(index))
+        if clsRef == null then
           val superClassRef = sClass.eval.asInstanceOf[ClassStruct]
           val newClass = this.declareClass(cName, superClassRef, clsExpArgs)
-          currentEnvironment(0).classes.put(cName, newClass)
+          currentEnvironment(index).classes.put(cName, newClass)
         else
-          throw new Exception("Class already exists")
+          throw new Exception(cName + " class already exists.")
 
 
       case ParamsExp(pExpArgs*) =>
@@ -552,6 +572,8 @@ object SetTheoryDSL {
         val currentObject = objRef.eval
         currentEnvironment(index).bindingEnvironment.put("this", currentObject)
         currentObject.asInstanceOf[ObjectStruct].setField(fName, exp.eval, true)
+
+      case ObjectInstanceOf(objRef, clsRef) => objRef.eval.asInstanceOf[ObjectStruct].isInstanceOf(clsRef.eval.asInstanceOf[ClassStruct])
     }
 
     private def resolveClassMembers(classRef: ClassStruct): Any = this match {
@@ -690,6 +712,10 @@ object SetTheoryDSL {
       )
     ).eval
 
+//    case ClassRefFromObject(className: String, objRef: SetExpression)
+//
+//    case ClassRefFromClass(className: String, classRef: SetExpression)
+
     Assign("obj1", NewObject( ClassRef("c1") )).eval
     Assign("obj2", NewObject( ClassRef("c2") )).eval
     println( FieldFromObject( "f1", Variable("obj1") ).eval )
@@ -697,7 +723,13 @@ object SetTheoryDSL {
     println("second object")
     println( InvokeMethodOfObject( "m1", Variable("obj2") ).eval )
     println("third object")
-
+    Assign("obj3", NewObject( ClassRefFromClass("c3", ClassRef("c2") ) ) ).eval
+    println( FieldFromObject( "f1", Variable("obj3") ).eval )
+    println("4th object")
+    Assign("obj4", NewObject( ClassRefFromObject("c3", Variable("obj2") ) ) ).eval
+    SetFieldFromObject("f1", Variable("obj4"), Value("bye")).eval
+    println( FieldFromObject( "f1", Variable("obj4") ).eval )
+    println( ObjectInstanceOf(Variable("obj4"), ClassRef("c2") ).eval )
   }
 
 }
