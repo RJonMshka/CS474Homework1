@@ -7,7 +7,7 @@
 ---
 
 ### Introduction
-Set Theory DSL is a Domain Specific Language created to perform simple operations on Sets. It is build on top of Scala 3. Set operations like Union, Intersection, Set Difference, Symmetric Set Difference and Cartesian are implemented with the help of expression. Other operations like Inserting and deleting items are also implemented. Language specific operations like assigning the values to variables, fetching those variables, macros and their evaluation and scopes (both named and anonymous scopes) are also implemented. Other than that you can also, equate expression and check whether a particular value is in the set or not.
+Set Theory DSL is a Domain Specific Language created to create classes, objects and perform simple operations on Sets. It is build on top of Scala 3. Set operations like Union, Intersection, Set Difference, Symmetric Set Difference and Cartesian are implemented with the help of expression. Other operations like Inserting and deleting items are also implemented. Language specific operations like assigning the values to variables, fetching those variables, macros and their evaluation and scopes (both named and anonymous scopes) are also implemented. Classes, Object are also allowed to create. Classes can inherit other classes and single class inheritance is supported. There is also the support of Nested Classes. Operations on Sets can be performed with the help of this DSL's capabilities to enable object-oriented programming. Other important features like Dynamic Dispatch and access modiifers are also supported.
 
 ---
 
@@ -19,7 +19,7 @@ Set Theory DSL is a Domain Specific Language created to perform simple operation
 4. Open IntelliJ and go to `File > New > Project from existing Source`, or `File > New > Project from version control`. For the second option, you have to directly provide git repo link and no need to clone the git repo separately.
 5. Make sure you have Java JDK and scala installed on your system. Java JDK between versions 8 and 17 are required to run this project.
 6. We are using Scala version `3.1.1`. Please go to its [docs](https://docs.scala-lang.org/scala3/) for better understanding. You can download Scala 3 from [here](https://www.scala-lang.org/download/).
-7. The build tool we are using for this is call [SBT(Simple Build Toolkit)](https://www.scala-sbt.org/download.html). Check out this download [link](https://www.scala-sbt.org/download.html) for SBT. 
+7. The build tool we are using for this is call [SBT(Simple Build Toolkit)](https://www.scala-sbt.org/download.html). Check out this download [link](https://www.scala-sbt.org/download.html) for SBT.
 8. Alternatively, you can also install SBT for your project only from IntelliJ's external libraries.
 9. SBT version we are using in this project is `1.6.2`.
 10. Please also install `Scala` plugin in IntelliJ itself.
@@ -28,8 +28,8 @@ Set Theory DSL is a Domain Specific Language created to perform simple operation
 13. The `build.sbt` is responsible for building your project.
 14. In IntelliJ, go to `Build > Build Project` to build the project.
 15. Once build is finished, you are ready to run the project.
-16. `src/test/scala/SetTheoryDSLTest.scala` is the file where all the test cases are written. This is the file you need to run to test the project. 
-17. You can add your own test cases in it to test the project better.
+16. There are two test files `src/test/scala/SetTheoryDSLTest.scala` and `src/test/scala/ClassesAndInheritanceDSLTest.scala`. The first one is concerned with testing Set Operations of DSL's SetExpressions and second one is focused towards testing the object-oriented features of this DSL.
+17. You can add your own test cases in these files to test the project better.
 18. To run test cases directly from terminal, enter the command `sbt compile test` or `sbt clean compile test`.
 19. To run the main file `SetTheoryDSLTest.scala`, enter the command `sbt compile run` or `sbt clean compile run` in the terminal.
 20. The file `src/main/scala/SetTheoryDSL.scala` is the main implementation of Set Theory DSL.
@@ -39,11 +39,12 @@ Set Theory DSL is a Domain Specific Language created to perform simple operation
 
 ### Implementation
 The implementation of Set Theory DSL is done with the help of `Enumeration` or [enums](https://docs.scala-lang.org/scala3/reference/enums/enums.html) construct. Enum types are used as Set Expressions (or Instructions) for the DSL. `Mutable Maps` are used to store variables. The `Scope` class is the implementation of named and anonymous scopes whose instances hold a name, a pointer to the parent scope, their bindings or reference environment and a `Mutable Map` which holds the reference to its child scopes.
+The support of Object-Oriented Programming (OOP) behavior is also implemented. Various `SetExpression`s are added as compared to the homework1 (branch `master`). `ClassStruct`, `MethodStruct`, `ObjectStruct` and some other constructs are used to create support for Classes, Objects, Fields, Methods and specifically dynamic dispatch and inheritance.
 A deep down implementation, syntax and semantics is covered in the next section.
 
 ---
 
-## Syntax and Semantics
+## Set Operation Syntax and Semantics
 
 ### Common Language Syntax
 All of the expression are of type `SetExpression`.
@@ -306,6 +307,165 @@ Equals( Variable("var1"), Variable("var2") ).eval             // returns false a
 Equals( Variable("var1), Value(20) ).eval                     //returns true as both expression evaluate to value 20
 ```
 
-That's it. Those are all the expression we can use in Set Theory DSL.
+## OOPS Features
+This DSL supports Classes, Objects and Inheritance. There are four kinds of access modifiers: `Public`, `Protected`, `Private`, and `Default` for both fields and methods. Also, there can be only constructor and only single class inheritance is supported which means that a class can be constructed with or without only one parent class. A class can have atmost one direct super class.
 
-More features coming soon.
+Only `Public` and `Protected` members (both fields and methods) are inherited. `Public` members can be accessed anywhere given the reference of the object. `Protected`, `Private` and `Default` members are accessible within the body of the class.
+
+Feature of dynamic dispatch have also been added. Fields and Methods of access level `Public` and `Private` are the only candidates for Dynamic Dispatch. Any try to access private, protected and default member using Class's instance will result in an `Exception`.
+Also, any attempt to access private and default members of superClass will also result in an `Exception`.
+
+
+## (Syntax and Semantics)
+
+### ClassDef(className: String, classExpArgs: SetExpression*)
+The `ClassDef` expression is used to create or define new classes. `className` represents the name of the class which will be stored in the binding environment. In the correct referencing environment, use can reference this class again with this `className`. `classExpArgs` are a Sequence of SetExpression representing Class members like Fields, Methods, Constructor, etc.
+
+A Class can contain direct following members: CreateField, CreatePublicField, CreatePrivateField, CreateProtectedField, Constructor, Method, PublicMethod, PrivateMethod, ProtectedMethod, ClassDef and ClassDefThatExtends.
+
+Syntax/Code Example:
+```
+ClassDef(
+    "ClassOne",                                         // name of the class "ClassOne"
+    CreatePublicField("f1"),                             // Field creation
+    CreateProtectedField("f2"),
+    Constructor(                                          // defining Constructor                  
+        ParamsExp(Param("a"), Param("b")),
+        SetField("f1", Variable("a") ),
+        SetField("f2", Variable("b") ),
+    ),
+    PublicMethod(                                           // defining a public method
+        "m2",
+        ParamsExp(),
+        Field("f2")
+    )
+).eval
+```
+
+### ClassDefThatExtends(cName: String, superClass: SetExpression, classExpArgs: SetExpression*)
+The `ClassDefThatExtends` expression is used to create or define new classes similiar to `ClassDef`. However, with this, you will have the ability to create a class by inheriting some other class. `className` represents the name of the class which will be stored in the binding environment. In the correct referencing environment, use can reference this class again with this `className`. And `superClass` will be the reference to the class which this class is going to inherit. `classExpArgs` are a Sequence of SetExpression representing Class members like Fields, Methods, Constructor, etc.
+
+Syntax/Code Example:
+```
+ClassDefThatExtends(
+    "ClassTwo",
+    ClassRef("ClassOne"),                               // Parent class's reference
+    CreatePublicField("f1"),                             // Field creation
+    CreateProtectedField("f2"),
+    Constructor(                                          // defining Constructor                  
+        ParamsExp(Param("a"), Param("b")),                // specifying the signature and variables for arguments
+        SetField("f1", Variable("a") ),                     // setting the value for fields
+        SetField("f2", Variable("b") ),
+    ),
+    PublicMethod(                                           // defining a public method
+        "m2",
+        ParamsExp(),
+        Field("f2")
+    )
+).eval                   // creates a class of name `ClassTwo`
+```
+
+### ClassRef(className: String)
+The `ClassRef` expression is used to refer to an existing class with na,e `className`.
+
+Syntax/Code Example:
+```
+ClassRef("ClassOne").eval 
+```
+
+Usage: For example in class creation
+```
+ClassDefThatExtends(
+    "ClassTwo",
+    ClassRef("ClassOne"),                               // ClassRef is used to pass reference of parent class to create sub class
+    CreatePublicField("f1"),                             // Field creation
+    CreateProtectedField("f2"),
+    Constructor(                                          // defining Constructor                  
+        ParamsExp(Param("a"), Param("b")),                // specifying the signature and variables for arguments
+        SetField("f1", Variable("a") ),                     // setting the value for fields
+        SetField("f2", Variable("b") ),
+    ),
+    PublicMethod(                                           // defining a public method
+        "m2",
+        ParamsExp(),
+        Field("f2")
+    )
+).eval                   // creates a class of name `ClassTwo` that extends/inherits "ClassOne" Class
+```
+
+### Inner Classes:
+Inner classes can be created with just passing another ClassDef or ClassDefThatExtends (as per need) in the ClassDef or ClassDefThatExtends Expression.
+
+Example
+```
+ClassDef(
+    "OuterClass",                      // normal class creation
+    CreatePublicField("f1"),
+    Constructor(
+        ParamsExp(),
+        SetField("f1", Value("field_value"))
+    ),
+    ClassDef(                          // creating an inner class named "InnerClass"
+        "InnerClass",
+        CreatePublicField("f2"),
+        Constructor(
+            ParamsExp(),
+            SetField("f2", Value("inner_field_value"))
+        )
+    )
+).eval
+```
+
+### ClassRefFromClass(className: String, classRef: SetExpression)
+`ClassRefFromClass` can be used to reference inner classes from reference of outer class. It can be used in creating objects by instantiating inner class by first referencing outer class.
+
+Example
+```
+ClassRefFromClass( "ClassTwo", ClassRef("ClassOne") ).eval       // this expression returns to the inner class "ClassTwo" of enclosing class "ClassOne"
+```
+
+### Param(s: String): String
+`Param` is used to create a binding for argument that a class method accepts. It is used along with `ParamsExp` Expression.
+```
+Param("x").eval        // return "x"
+```
+
+### ParamsExp(paramExpArgs: SetExpression*)
+`ParamsExp` is used to create agrument set signature for a method or constructor of class.
+
+Syntax:
+```
+ParamsExp().eval    // no arguments
+ParamsExp(Param("a"), Param("b")).eval          // create a signature for method that accepts two arguments and can be referenced in the body of that method by variables "a" and "b".
+```
+
+Usage:
+```
+ClassDef(
+    "Class1",                      // normal class creation
+    CreatePublicField("f1"),
+    Constructor(
+        ParamsExp( Param("v1")),              // here constructor's argument list is defined as single Param with name "v1"
+        SetField("f1", Variable("v1"))        // refered to "v1" param passed from invoker as Variable("v1")
+    )
+).eval
+```
+
+### Constructor(ParamsExp: SetExpression, cBodyExpArgs: SetExpression*)
+`Constructor` expression is used to create constructor for Class which will be invoked when an object is created from that class.
+
+Consider this Class definition:
+```
+ClassDef(
+    "Class1",                      
+    CreatePublicField("f1"),
+    Constructor(
+        ParamsExp( Param("v1")), 
+        SetField("f1", Variable("v1")) 
+    )
+).eval
+```
+
+The first argument of the Constructor are ParamsExp Expression representing what kind of signature is used to instantiate objects. Other params are expression which are part of constructor body and are though of as instructions.
+When an object is instantiated, the OO mechanism goes to the top most class first and initiate's its fields and then invoke top class's constructor with the params passed. If the signature (number of params) of Constructor and the params values do not match then it would result in an `Exception`.
+
