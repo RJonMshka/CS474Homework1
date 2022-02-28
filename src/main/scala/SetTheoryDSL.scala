@@ -770,8 +770,8 @@ object SetTheoryDSL {
     /**
      * This method resolves the Expressions which are members of the class, includes class field declaration, defining constructor, defining methods, defining inner/nested classes
      *
-     * @param classRef
-     * @return
+     * @param classRef - class reference on which these members are called
+     * @return Any
      */
     private def resolveClassMembers(classRef: ClassStruct): Any = this match {
       // Constructor Expression - will not be evaluated separately
