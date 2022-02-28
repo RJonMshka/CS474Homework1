@@ -77,15 +77,6 @@ class SetTheoryDSLTest extends AnyFlatSpec {
     assert( Variable("set_t11").eval == Set(10, 50) )
   }
 
-  it should "create an anonymous scope and insert a variable of outer scope to the set" in {
-    Assign("var_t12", Value(50)).eval
-    Assign("set_t12", SetIdentifier( Value(10) )).eval
-    UnnamedScope(
-      InsertInto( Variable("set_t12"), Variable("var_t12"))
-    ).eval
-    assert( Variable("set_t12").eval == Set(10, 50) )
-  }
-
   it should "create nested scopes and insert a variable of outer scope to the set" in {
 
     Assign("set_t13", SetIdentifier( Value(10) )).eval

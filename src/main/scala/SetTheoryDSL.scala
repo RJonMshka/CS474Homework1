@@ -576,7 +576,7 @@ object SetTheoryDSL {
      *
      * @return Any
      */
-    def eval: Any = this match {
+    def eval: Any = (this: @unchecked) match {
       // Value Expression Implementation
       case Value(v) => v
 
@@ -773,7 +773,7 @@ object SetTheoryDSL {
      * @param classRef - class reference on which these members are called
      * @return Any
      */
-    private def resolveClassMembers(classRef: ClassStruct): Any = this match {
+    private def resolveClassMembers(classRef: ClassStruct): Any = (this: @unchecked) match {
       // Constructor Expression - will not be evaluated separately
       case Constructor(pExp, body*) =>
         classRef.classConstructor.put("constructor", MethodStruct(pExp, body))

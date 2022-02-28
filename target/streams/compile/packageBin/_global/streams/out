@@ -1,0 +1,189 @@
+[0m[[0m[0mdebug[0m] [0m[0mPackaging F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\cs474homework1_3-0.1.0-SNAPSHOT.jar ...[0m
+[0m[[0m[0mdebug[0m] [0m[0mInput file mappings:[0m
+[0m[[0m[0mdebug[0m] [0m[0m	runSetTheoryDSL.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\runSetTheoryDSL.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	runSetTheoryDSL.tasty[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\runSetTheoryDSL.tasty[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$ClassStruct.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$ClassStruct.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$MethodStruct.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$MethodStruct.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$ObjectStruct.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$ObjectStruct.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$Scope.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$Scope.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Assign$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Assign$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Assign.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Assign.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$CartesianProduct$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$CartesianProduct$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$CartesianProduct.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$CartesianProduct.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ClassDef$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ClassDef$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ClassDef.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ClassDef.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ClassDefThatExtends$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ClassDefThatExtends$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ClassDefThatExtends.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ClassDefThatExtends.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ClassRef$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ClassRef$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ClassRef.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ClassRef.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ClassRefFromClass$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ClassRefFromClass$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ClassRefFromClass.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ClassRefFromClass.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ClassRefFromObject$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ClassRefFromObject$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ClassRefFromObject.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ClassRefFromObject.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ComputeMacro$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ComputeMacro$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ComputeMacro.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ComputeMacro.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Constructor$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Constructor$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Constructor.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Constructor.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Contains$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Contains$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Contains.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Contains.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$CreateField$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$CreateField$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$CreateField.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$CreateField.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$CreatePrivateField$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$CreatePrivateField$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$CreatePrivateField.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$CreatePrivateField.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$CreateProtectedField$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$CreateProtectedField$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$CreateProtectedField.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$CreateProtectedField.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$CreatePublicField$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$CreatePublicField$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$CreatePublicField.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$CreatePublicField.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$DeleteFrom$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$DeleteFrom$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$DeleteFrom.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$DeleteFrom.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Equals$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Equals$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Equals.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Equals.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Field$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Field$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Field.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Field.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$FieldFromObject$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$FieldFromObject$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$FieldFromObject.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$FieldFromObject.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$InsertInto$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$InsertInto$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$InsertInto.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$InsertInto.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Intersection$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Intersection$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Intersection.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Intersection.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$InvokeMethod$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$InvokeMethod$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$InvokeMethod.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$InvokeMethod.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$InvokeMethodOfObject$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$InvokeMethodOfObject$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$InvokeMethodOfObject.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$InvokeMethodOfObject.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Macro$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Macro$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Macro.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Macro.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Method$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Method$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Method.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Method.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$NamedScope$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$NamedScope$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$NamedScope.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$NamedScope.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$NewObject$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$NewObject$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$NewObject.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$NewObject.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ObjectInstanceOf$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ObjectInstanceOf$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ObjectInstanceOf.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ObjectInstanceOf.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Param$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Param$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Param.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Param.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ParamsExp$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ParamsExp$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ParamsExp.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ParamsExp.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$PrivateMethod$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$PrivateMethod$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$PrivateMethod.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$PrivateMethod.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ProtectedMethod$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ProtectedMethod$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$ProtectedMethod.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$ProtectedMethod.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$PublicMethod$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$PublicMethod$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$PublicMethod.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$PublicMethod.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$SetDifference$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$SetDifference$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$SetDifference.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$SetDifference.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$SetField$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$SetField$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$SetField.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$SetField.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$SetFieldFromObject$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$SetFieldFromObject$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$SetFieldFromObject.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$SetFieldFromObject.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$SetIdentifier$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$SetIdentifier$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$SetIdentifier.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$SetIdentifier.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$SymDifference$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$SymDifference$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$SymDifference.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$SymDifference.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Union$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Union$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Union.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Union.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$UnnamedScope$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$UnnamedScope$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$UnnamedScope.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$UnnamedScope.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Value$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Value$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Value.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Value.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Variable$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Variable$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression$Variable.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression$Variable.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL$SetExpression.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL$SetExpression.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SetTheoryDSL.tasty[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  F:\UIC Study\CS 474 - OOLE\Code trials Projects\CS474Homework1\target\scala-3.1.1\classes\SetTheoryDSL.tasty[0m
+[0m[[0m[0mdebug[0m] [0m[0mDone packaging.[0m
