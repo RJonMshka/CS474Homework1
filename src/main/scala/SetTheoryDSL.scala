@@ -1,7 +1,6 @@
 /** Important imports */
 import SetTheoryDSL.SetExpression.{Constructor, CreatePrivateField, CreateProtectedField, CreatePublicField, Param, PublicMethod, SetFieldFromObject}
 import SetTheoryDSL.mutMapSetExp
-import com.sun.org.apache.bcel.internal.ExceptionConst.EXCS
 
 import collection.mutable
 import scala.annotation.tailrec
@@ -110,19 +109,24 @@ object SetTheoryDSL {
   ) {
     val objectClass = classRef
     val paramValues: Seq[Any] = (for p <- constructorArgs yield p.eval)
-    var fieldsMap: mutable.Map[String, Any] = mutable.Map()
+    val fieldsMap: mutable.Map[String, Any] = mutable.Map()
+    val inheritedFieldMap: mutable.Map[String, Any] = mutable.Map()
+    val publicFields: mutable.Set[String] = mutable.Set()
+    val protectedFields: mutable.Set[String] = mutable.Set()
     executeConstructor(objectClass, paramValues)
 
-    private def executeConstructor(classRef: ClassStruct, paramValues: Seq[Any]): Unit =
-      if classRef.parentClass != null then executeConstructor(classRef.parentClass, paramValues)
+    private def executeConstructor(classRef1: ClassStruct, paramValues: Seq[Any]): Unit =
+      if classRef1.parentClass != null then executeConstructor(classRef1.parentClass, paramValues)
       // recursively go to the top most class
-
-      // clearing the current fieldmap - will for populated for the top most object - fields are not inherited
-      fieldsMap.clear()
       // initializing all fields to a value of zero
-      classRef.classFieldNames.foreach(fieldsMap.put( _, 0))
+      fieldsMap.clear()
+      classRef1.classFieldNames.foreach(fieldsMap.put( _, 0))
+      fieldsMap ++= inheritedFieldMap
+      // inheriting logic for public and protected fields
+      publicFields ++= classRef1.classFieldTypes("publicFields")
+      protectedFields ++= classRef1.classFieldTypes("protectedFields")
       // these names can be different for different super constructors
-      val paramNames = classRef.classConstructor("constructor").argExp.eval.asInstanceOf[Seq[Any]]
+      val paramNames = classRef1.classConstructor("constructor").argExp.eval.asInstanceOf[Seq[Any]]
       val paramsMap: mutable.Map[String, Any] = mutable.Map()
       // but their number should be same
       if paramNames.size != paramValues.size then
@@ -139,11 +143,21 @@ object SetTheoryDSL {
 
       // adding params map to current referencing env
       currentEnvironment(index).bindingEnvironment ++= paramsMap
-      // Evaluating every expression in that constructor
-      classRef.classConstructor("constructor").methodBody.foreach( _.eval )
+      // Evaluating every expression in that constructor - this might have changed value of some of the fields
+      classRef1.classConstructor("constructor").methodBody.foreach( _.eval )
+
+      // updating the inherited field map and public/protected inherited set
+      classRef1.classFieldTypes("publicFields").foreach( item =>
+        if !fieldsMap.get(item).isEmpty then inheritedFieldMap.put(item, fieldsMap(item))
+      )
+      classRef1.classFieldTypes("protectedFields").foreach( item =>
+        if !fieldsMap.get(item).isEmpty then inheritedFieldMap.put(item, fieldsMap(item))
+      )
+
 
       // once done executing - no need to remove the params from currentEnv
       currentEnvironment(index) = currentEnvironment(index).scopeParent
+      // clearing the fieldMap - only inheritedMap needs to be retained
 
     // this method is for invoking class methods from within the body of the class or object
     // this means that the method is either called from constructor or some other method from outside
@@ -180,29 +194,35 @@ object SetTheoryDSL {
       // return the value
       lastCallReturn("return")
 
-    private def dynamicDispatch(mName: String, classRef: ClassStruct, isCalledFromOutside: Boolean): MethodStruct =
-      if !classRef.classMethodMap.keys.toSet.contains(mName) && classRef.parentClass != null then
-        dynamicDispatch(mName, classRef.parentClass, isCalledFromOutside)
-      else if classRef.classMethodMap.keys.toSet.contains(mName) && isCalledFromOutside then
-        // check if either default or private member
-        if classRef.classMethodsTypes("defaultMethods").contains(mName) || classRef.classMethodsTypes("privateMethods").contains(mName) then
+    private def dynamicDispatch(mName: String, classRef1: ClassStruct, isCalledFromOutside: Boolean): MethodStruct =
+      if !classRef1.classMethodMap.keys.toSet.contains(mName) && classRef1.parentClass != null then
+        dynamicDispatch(mName, classRef1.parentClass, isCalledFromOutside)
+      else if classRef1.classMethodMap.keys.toSet.contains(mName) && isCalledFromOutside then
+        // check if in default, private or protected method and is called from outside
+        if !classRef1.classMethodsTypes("publicMethods").contains(mName) then
           throw new Exception("cannot access private or default method from an object")
         else
-          classRef.classMethodMap(mName)
-      else if classRef.classMethodMap.keys.toSet.contains(mName) && !isCalledFromOutside then
-        classRef.classMethodMap(mName)
+          classRef1.classMethodMap(mName)
+      else if classRef1.classMethodMap.keys.toSet.contains(mName) && !isCalledFromOutside then
+        if classRef1.classMethodsTypes("defaultMethods").contains(mName) || classRef1.classMethodsTypes("privateMethods").contains(mName) then
+          throw new Exception("default and private methods cannot be inherited")
+        else
+          // can access public and protected methods from inside
+          classRef1.classMethodMap(mName)
       else
         throw new Exception("method not found")
 
     def getField(fName: String, requestFromOutside: Boolean): Any =
-      // fields are not going to be inherited so no need to look up the class chain
-      if !objectClass.classFieldNames.contains(fName) then
-        throw new Exception("no such field exist")
-      else if requestFromOutside && (objectClass.classFieldTypes("defaultFields").contains(fName) || objectClass.classFieldTypes("privateFields").contains(fName)) then
-        // it means that access to private and default are forbidden
-        throw new Exception("access to private or default fields from outside is not permitted")
-      else
-        fieldsMap(fName)
+      // if not in current set of fields and also not in any inherited public and protected fields
+      if !( fieldsMap.keys.toSet.contains(fName) || publicFields.contains(fName) || protectedFields.contains(fName) ) then
+        throw new Exception("No such field Exist")
+      // it means that the field is in current set or inherited public and protected fields
+      else if !(objectClass.classFieldTypes("publicFields").contains(fName) || publicFields.contains(fName)) then
+        // it means the field must be protected, default or private
+        if requestFromOutside then
+          throw new Exception("access to default, private and public fields from outside is not permitted")
+        else fieldsMap(fName)
+      else fieldsMap(fName)
 
     def setField(fName: String, value: Any, requestFromOutside: Boolean): Unit =
       try {
@@ -211,6 +231,7 @@ object SetTheoryDSL {
         case e: Exception => throw e
       }
       fieldsMap.put(fName, value)
+      println(fieldsMap)
 
     def getInnerClass(cName: String): ClassStruct =
       if objectClass.memberClasses.get(cName).isEmpty then
@@ -593,37 +614,90 @@ object SetTheoryDSL {
   @main def runSetTheoryDSL(): Unit = {
     import SetExpression.*
 
+//    ClassDef(
+//      "TopClass",
+//      CreatePublicField("f1"),
+//      CreatePublicField("f2"),
+//      Constructor(
+//        ParamsExp(Param("x"), Param("y")),
+//        SetField("f1", Variable("x")),
+//        SetField("f2", Variable("y"))
+//      ),
+//      PublicMethod(
+//        "set_f_to_params",
+//        ParamsExp(Param("a"), Param("b")),
+//        SetField("f1", Variable("a")),
+//        SetField("f2", Variable("b"))
+//      )
+//
+//    ).eval
+//
+//    Assign("obj1", NewObject( ClassRef("TopClass"), Value(1), Value(2) )).eval
+//    InvokeMethodOfObject("set_f_to_params", Variable("obj1"), Value(40), Value(50)).eval
+//    println( FieldFromObject("f1", Variable("obj1")).eval )
+//    println( FieldFromObject("f2", Variable("obj1")).eval )
+//    println("program runs successfully")
+
     ClassDef(
-      "TopClass",
+      "c1",
       CreatePublicField("f1"),
-      CreatePublicField("f2"),
+      CreateProtectedField("f2"),
+      CreatePrivateField("f3"),
+      CreateField("f4"),
       Constructor(
-        ParamsExp(Param("x"), Param("y")),
-        SetField("f1", Variable("x")),
-        SetField("f2", Variable("y"))
-      ),
-      PublicMethod(
-        "set_f_to_params",
-        ParamsExp(Param("a"), Param("b")),
-        SetField("f1", Variable("a")),
-        SetField("f1", Variable("b"))
-      ),
-      PublicMethod(
-        "get_f1",
         ParamsExp(),
-        Field("f1")
+        SetField("f1", Value(1)),
+        SetField("f2", Value(2)),
+        SetField("f3", Value(3)),
+        SetField("f4", Value(4)),
       ),
       PublicMethod(
-        "get_f2",
+        "m1",
+        ParamsExp(),
+        InvokeMethod("m2")
+      ),
+      PublicMethod(
+        "m2",
         ParamsExp(),
         Field("f2")
       )
-
     ).eval
 
-    Assign("obj1", NewObject( ClassRef("TopClass"), Value(1), Value(2) )).eval
-    println( InvokeMethodOfObject("get_f1", Variable("obj1")).eval )
-    println("program runs successfully")
+    ClassDefThatExtends(
+      "c2",
+      ClassRef("c1"),
+      CreatePublicField("f5"),
+      CreateProtectedField("f6"),
+      CreatePrivateField("f7"),
+      CreateField("f8"),
+      Constructor(
+        ParamsExp(),
+        SetField("f2", Value(30)),
+        SetField("f5", Value(5)),
+        SetField("f6", Value(6)),
+        SetField("f7", Value(7)),
+        SetField("f8", Value(8)),
+      ),
+      ClassDef(
+        "c3",
+        CreatePublicField("f1"),
+        CreatePublicField("f5"),
+        Constructor(
+          ParamsExp(),
+          SetField("f1", Value("hello")),
+          SetField("f5", Value(55))
+        )
+      )
+    ).eval
+
+    Assign("obj1", NewObject( ClassRef("c1") )).eval
+    Assign("obj2", NewObject( ClassRef("c2") )).eval
+    println( FieldFromObject( "f1", Variable("obj1") ).eval )
+    println( FieldFromObject( "f1", Variable("obj2") ).eval )
+    println("second object")
+    println( InvokeMethodOfObject( "m1", Variable("obj2") ).eval )
+    println("third object")
+
   }
 
 }
