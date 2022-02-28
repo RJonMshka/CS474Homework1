@@ -7,14 +7,14 @@
 ---
 
 ### Introduction
-Set Theory DSL is a Domain Specific Language created to create classes, objects and perform simple operations on Sets. It is build on top of Scala 3. Set operations like Union, Intersection, Set Difference, Symmetric Set Difference and Cartesian are implemented with the help of expression. Other operations like Inserting and deleting items are also implemented. Language specific operations like assigning the values to variables, fetching those variables, macros and their evaluation and scopes (both named and anonymous scopes) are also implemented. Classes, Object are also allowed to create. Classes can inherit other classes and single class inheritance is supported. There is also the support of Nested Classes. Operations on Sets can be performed with the help of this DSL's capabilities to enable object-oriented programming. Other important features like Dynamic Dispatch and access modiifers are also supported.
+Set Theory DSL is a Domain Specific Language created to create classes, objects and perform simple operations on Sets. It is build on top of Scala 3. Set operations like Union, Intersection, Set Difference, Symmetric Set Difference and Cartesian are implemented with the help of expression. Other operations like Inserting and deleting items are also implemented. Language specific operations like assigning the values to variables, fetching those variables, macros and their evaluation and scopes (both named and anonymous scopes) are also implemented. Classes, Object are also allowed to create. Classes can inherit other classes and single class inheritance is supported. There is also the support of Nested Classes. Operations on Sets can be performed with the help of this DSLs' capabilities to enable object-oriented programming. Other important features like Dynamic Dispatch and access modifiers are also supported.
 
 ---
 
 ###  Instructions to run the Project
 
 1. Install [IntelliJ](https://www.jetbrains.com/student/) (this link is for student edition, you can download other as well).
-2. Use [github](https://github.com/RJonMshka/CS474Homework1.git) repo for this project and clone it into your machine using git bash on Windows and terminal on MacOS.
+2. Use [gitHub](https://github.com/RJonMshka/CS474Homework1.git) repo for this project and clone it into your machine using git bash on Windows and terminal on MacOS.
 3. Switch to the `homework2` branch if the default branch is something else.
 4. Open IntelliJ and go to `File > New > Project from existing Source`, or `File > New > Project from version control`. For the second option, you have to directly provide git repo link and no need to clone the git repo separately.
 5. Make sure you have Java JDK and scala installed on your system. Java JDK between versions 8 and 17 are required to run this project.
@@ -28,7 +28,7 @@ Set Theory DSL is a Domain Specific Language created to create classes, objects 
 13. The `build.sbt` is responsible for building your project.
 14. In IntelliJ, go to `Build > Build Project` to build the project.
 15. Once build is finished, you are ready to run the project.
-16. There are two test files `src/test/scala/SetTheoryDSLTest.scala` and `src/test/scala/ClassesAndInheritanceDSLTest.scala`. The first one is concerned with testing Set Operations of DSL's SetExpressions and second one is focused towards testing the object-oriented features of this DSL.
+16. There are two test files `src/test/scala/SetTheoryDSLTest.scala` and `src/test/scala/ClassesAndInheritanceDSLTest.scala`. The first one is concerned with testing Set Operations of DSLs' SetExpressions and second one is focused towards testing the object-oriented features of this DSL.
 17. You can add your own test cases in these files to test the project better.
 18. To run test cases directly from terminal, enter the command `sbt compile test` or `sbt clean compile test`.
 19. To run the main file `SetTheoryDSLTest.scala`, enter the command `sbt compile run` or `sbt clean compile run` in the terminal.
@@ -308,7 +308,7 @@ Equals( Variable("var1), Value(20) ).eval                     //returns true as 
 ```
 
 ## OOPS Features
-This DSL supports Classes, Objects and Inheritance. There are four kinds of access modifiers: `Public`, `Protected`, `Private`, and `Default` for both fields and methods. Also, there can be only constructor and only single class inheritance is supported which means that a class can be constructed with or without only one parent class. A class can have atmost one direct super class.
+This DSL supports Classes, Objects and Inheritance. There are four kinds of access modifiers: `Public`, `Protected`, `Private`, and `Default` for both fields and methods. Also, there can be only constructor and only single class inheritance is supported which means that a class can be constructed with or without only one parent class. A class can have to the most one direct super class.
 
 Only `Public` and `Protected` members (both fields and methods) are inherited. `Public` members can be accessed anywhere given the reference of the object. `Protected`, `Private` and `Default` members are accessible within the body of the class.
 
@@ -343,7 +343,7 @@ ClassDef(
 ```
 
 ### ClassDefThatExtends(cName: String, superClass: SetExpression, classExpArgs: SetExpression*)
-The `ClassDefThatExtends` expression is used to create or define new classes similiar to `ClassDef`. However, with this, you will have the ability to create a class by inheriting some other class. `className` represents the name of the class which will be stored in the binding environment. In the correct referencing environment, use can reference this class again with this `className`. And `superClass` will be the reference to the class which this class is going to inherit. `classExpArgs` are a Sequence of SetExpression representing Class members like Fields, Methods, Constructor, etc.
+The `ClassDefThatExtends` expression is used to create or define new classes similar to `ClassDef`. However, with this, you will have the ability to create a class by inheriting some other class. `className` represents the name of the class which will be stored in the binding environment. In the correct referencing environment, use can reference this class again with this `className`. And `superClass` will be the reference to the class which this class is going to inherit. `classExpArgs` are a Sequence of SetExpression representing Class members like Fields, Methods, Constructor, etc.
 
 Syntax/Code Example:
 ```
@@ -431,7 +431,7 @@ Param("x").eval        // return "x"
 ```
 
 ### ParamsExp(paramExpArgs: SetExpression*)
-`ParamsExp` is used to create agrument set signature for a method or constructor of class.
+`ParamsExp` is used to create argument set signature for a method or constructor of class.
 
 Syntax:
 ```
@@ -470,7 +470,7 @@ The first argument of the Constructor are ParamsExp Expression representing what
 When an object is instantiated, the OO mechanism goes to the top most class first and initiate's its fields and then invoke top class's constructor with the params passed. If the signature (number of params) of Constructor and the params values do not match then it would result in an `Exception`.
 
 ### Field(fieldName: String): Any
-`Field` expression is used to refer to a field of an object with its name within the body of the class. Usage of this expression on object intance outside body of class is prohibited. We have another expression for that behavior.
+`Field` expression is used to refer to a field of an object with its name within the body of the class. Usage of this expression on object instance outside body of class is prohibited. We have another expression for that behavior.
 
 Syntax:
 ```
@@ -571,7 +571,7 @@ ClassDef(
 
 ### Method(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
 `Method` Expression is used to create a method with name `methodName` for the class. `argExp` is the set of params that this method needs to be invoked and `mBodyExpArgs` are the expression of its body or we can say that they are instructions of the method.
-`Method` creates a method with default access modiifer which means that it cannot be accessed/invoked outside class's body directly and will not be inherited by any sub-class.
+`Method` creates a method with default access modifier which means that it cannot be accessed/invoked outside class's body directly and will not be inherited by any sub-class.
 The last expression of method body will specify its return type.
 
 Usage:
@@ -594,7 +594,7 @@ ClassDef(
 
 ### PublicMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
 `PublicMethod` Expression is similar to `Method`.
-`PublicMethod` creates a method with public access modiifer which means that it can be accessed/invoked outside class's body directly and can be inherited by any sub-class.
+`PublicMethod` creates a method with public access modifier which means that it can be accessed/invoked outside class's body directly and can be inherited by any sub-class.
 The last expression of method body will specify its return type.
 
 Usage:
@@ -617,7 +617,7 @@ ClassDef(
 
 ### ProtectedMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
 `ProtectedMethod` Expression is similar to `Method`.
-`ProtectedMethod` creates a method with protected access modiifer which means that it cannot be accessed/invoked outside class's body directly but can be inherited by any sub-class.
+`ProtectedMethod` creates a method with protected access modifier which means that it cannot be accessed/invoked outside class's body directly but can be inherited by any sub-class.
 The last expression of method body will specify its return type.
 
 Usage:
@@ -640,7 +640,7 @@ ClassDef(
 
 ### PrivateMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
 PrivateMethod` Expression is similar to `Method`.
-`PrivateMethod` creates a method with private access modiifer which means that it cannot be accessed/invoked outside class's body directly and also cannot be inherited by any sub-class.
+`PrivateMethod` creates a method with private access modifier which means that it cannot be accessed/invoked outside class's body directly and also cannot be inherited by any sub-class.
 The last expression of method body will specify its return type.
 
 Usage:
@@ -717,9 +717,29 @@ Assign("obj1", NewObject( ClassRef("OuterClass") )).eval     // instance of oute
 Assign("obj2", NewObject( ClassRefFromObject( "InnerClass", Variable("obj1) ) )).eval      // object of InnerClass
 ```
 
-### FieldFromObject(fieldName: String, obj: SetExpression)
+### FieldFromObject(fieldName: String, obj: SetExpression): Any
 `FieldFromObject` is similar to `Field`. But it enables the user to access public fields of any object from the object itself.
 Any attempt to use `FieldFromObject` for accessing default, protected or private fields will result in an `Exception`.
+
+Syntax and Example:
+```
+ClassDef(
+    "Class1",                      // normal class creation
+    CreatePublicField("f1"),
+    Constructor(
+        ParamsExp(),
+        SetField("f1", Value("field_value"))
+    )
+).eval
+
+Assign("obj1", NewObject( ClassRef("Class1") )).eval 
+
+FieldFromObject("f1", Variable("obj1")).eval     // returns "field_value"
+```
+
+### SetFieldFromObject(fieldName: String, obj: SetExpression, exp: SetExpression)
+`SetFieldFromObject` is similar to `SetField`. It is used to set public field of an object from outside the body of class by directly referencing object to a particular value determined by evaluating `exp` SetExpression.
+Any attempt to use `SetFieldFromObject` for changing default, protected or private fields will result in an `Exception`.
 
 Syntax and Example:
 ```
@@ -734,4 +754,85 @@ ClassDef(
 Assign("obj1", NewObject( ClassRef("Class1") )).eval 
 
 FieldFromObject("f1", Variable("obj1")).eval     // returns "field_value"
+
+SetFieldFromObject("f1", Variable("obj1"), Value("hello")).eval     // changes the value of "f1" for "obj1" to "hello"
+
+FieldFromObject("f1", Variable("obj1")).eval     // returns "hello"
 ```
+
+### InvokeMethod(methodName: String, params: SetExpression*): Any
+`InvokeMethod` is used to invoke methods of class within the class body. For example, a class method will use InvokeMethod in one of its functions body to execute any other method from its own body.
+`methodName` specifies the name of the method and `params` specifies the signature of param the method receives. Signature in this DSL only refers to name of method and number of params for that method.
+
+
+Syntax and Example:
+```
+ClassDef(
+    "Class1",                      // normal class creation
+    CreatePublicField("f1"),
+    Constructor(
+        ParamsExp(),
+        SetField("f1", Value("field_value"))
+        InvokeMethod("m1", Value(20))                   // when called will return Set(10, 20, 30)
+    ),
+    Method(
+        "m1",
+        ParamsExp(Param("a")),
+        Union( SetIdentifier(Value(10), Value(30)), SetIdentifier(Variable("a")) )
+    )
+).eval
+```
+
+### InvokeMethodOfObject(mName: String, objRef: SetExpression, params: SetExpression*)
+Similar to `InvokeMethod` but is used to invoke method from outside the class body or from referencing object.
+This expression can only invoke public methods. Any attempt to invoke default, private and protected methods will lead to an `Exception`.
+
+Syntax and Example:
+```
+ClassDef(
+    "Class1",                      // normal class creation
+    CreatePublicField("f1"),
+    Constructor(
+        ParamsExp(),
+        SetField("f1", Value("field_value"))
+    ),
+    PublicMethod(
+        "m1",
+        ParamsExp(Param("a")),
+        Union( SetIdentifier(Value(10), Value(30)), SetIdentifier(Variable("a")) )
+    )
+).eval
+
+Assign("obj1", NewObject( ClassRef("Class1") )).eval 
+
+InvokeMethodOfObject("m1", Variable("obj1"), Value("abc") ).eval    // returns Set(10, 30, "abc")
+```
+
+### ObjectInstanceOf(objectRef: SetExpression, classRef: SetExpression): Boolean
+This expression returns `true` if object returned by evaluating `objectRef` is an instance of class returned by evaluating `classRef`.
+
+Usage:
+```
+ClassDef(
+    "Class1",                      // normal class creation
+    CreatePublicField("f1"),
+    Constructor(
+        ParamsExp(),
+        SetField("f1", Value("field_value"))
+    ),
+    PublicMethod(
+        "m1",
+        ParamsExp(Param("a")),
+        Union( SetIdentifier(Value(10), Value(30)), SetIdentifier(Variable("a")) )
+    )
+).eval
+
+Assign("obj1", NewObject( ClassRef("Class1") )).eval 
+
+ObjectInstanceOf( Variable("obj1"), ClassRef("Class1") ).eval      // return true
+
+ObjectInstanceOf( Variable("obj1"), ClassRef("ClassX") ).eval       // return false - given ClassX class was already declared
+```
+
+Those are all the Data-types and expressions of DSL Set Theory as of now.
+More exciting stuff coming soon.

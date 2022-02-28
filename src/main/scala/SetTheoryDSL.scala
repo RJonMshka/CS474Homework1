@@ -768,7 +768,7 @@ object SetTheoryDSL {
     }
 
     /**
-     * This method resolves the Expressions which are members of the class, includes class field declaration, definiting constructor, definiting methods, defining inner/nested classes
+     * This method resolves the Expressions which are members of the class, includes class field declaration, defining constructor, defining methods, defining inner/nested classes
      *
      * @param classRef
      * @return
