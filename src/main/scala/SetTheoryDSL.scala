@@ -1,5 +1,4 @@
 /** Important imports */
-import SetTheoryDSL.SetExpression.{Constructor, CreatePrivateField, CreateProtectedField, CreatePublicField, Param, PublicMethod, SetFieldFromObject}
 import SetTheoryDSL.mutMapSetExp
 
 import collection.mutable
@@ -346,54 +345,151 @@ object SetTheoryDSL {
      */
     case Equals(exp1: SetExpression, exp2: SetExpression)
 
+    /**
+     * ClassDef Expression
+     * Defines a class with a class name and set of expression which are part of class's body or can be thought of as class members
+     */
     case ClassDef(className: String, classExpArgs: SetExpression*)
 
-    case ClassDefThatExtends(cName: String, superClass: SetExpression.ClassRef, classExpArgs: SetExpression*)
+    /**
+     * ClassDefThatExtends Expression
+     * Defines a class similar to above, but also Extends or inherit another class (passed as second argument)
+     * Only Single class inheritance is allowed
+     */
+    case ClassDefThatExtends(cName: String, superClass: SetExpression, classExpArgs: SetExpression*)
 
+    /**
+     * ClassRef Expression
+     * Gives reference to class whose name is provided as argument
+     */
     case ClassRef(className: String)
 
+    /**
+     * ClassRefFromObject Expression
+     * Refer to a class which is declared as an inner class of the class that the object (evaluating objRef) is instantiated with
+     */
     case ClassRefFromObject(className: String, objRef: SetExpression)
 
+    /**
+     * ClassRefFromClass Expression
+     * Refer to a class which is declared as an inner class of the classRef class reference
+     */
     case ClassRefFromClass(className: String, classRef: SetExpression)
 
+    /**
+     * Param Expression
+     * Represent single param for building methods and constructors
+     */
     case Param(s: String)
 
+    /**
+     * ParamsExp Expression
+     * Represents a set of params
+     */
     case ParamsExp(paramExpArgs: SetExpression*)
 
+    /**
+     * Constructor Expression
+     * Defines a constructor for class with paramExp and other arguments as expressions as part of constructor's instructions
+     */
     case Constructor(ParamsExp: SetExpression, cBodyExpArgs: SetExpression*)
 
+    /**
+     * Field Expression
+     * Return a class field referred with string inside class Body
+     */
     case Field(fieldName: String)
 
+    /**
+     * FieldFromObject Expression
+     * Returns a class field referred from object or outside the class's body
+     */
     case FieldFromObject(fieldName: String, obj: SetExpression)
 
+    /**
+     * SetField Expression
+     * This is used to set or change the value of a particular field, fieldName: name of the field to be set and exp evaluates to a value that needs to be put the field
+     */
     case SetField(fieldName: String, exp: SetExpression)
 
+    /**
+     * SetFieldFromObject Expression
+     * Similar to set fields, but is used to set a field from an object's reference / outside the class's body
+     */
     case SetFieldFromObject(fieldName: String, obj: SetExpression, exp: SetExpression)
 
+    /**
+     * CreateField Expression
+     * Creates a field for class - can only be accessed within class body and cannot be inherited (same as private)
+     */
     case CreateField(fieldName: String)
 
+    /**
+     * CreatePublicField Expression
+     * Creates a field with "public" access modifier - can be accessed anywhere and also inheritable
+     */
     case CreatePublicField(fieldName: String)
 
+    /**
+     * CreateProtectedField Expression
+     * Creates a field with "protected" access modifier - can be accessed within the class body and also inheritable
+     */
     case CreateProtectedField(fieldName: String)
 
+    /**
+     * CreatePrivateField Expression
+     * Creates a field with "private" access modifier - can only be accessed within class body and cannot be inherited
+     */
     case CreatePrivateField(fieldName: String)
 
+    /**
+     * InvokeMethod Expression
+     * Invokes a method with its name and params from the class's body
+     */
     case InvokeMethod(methodName: String, params: SetExpression*)
 
+    /**
+     * InvokeMethodOfObject Expression
+     * Invokes a method with its name and params from the object/ calls method on the object returned by evaluating objRef Expression
+     */
     case InvokeMethodOfObject(mName: String, objRef: SetExpression, params: SetExpression*)
 
+    /**
+     * Method Expression
+     * Defines a method with default access - same as private - cannot be referenced by any instance outside the class's body and is not a candidate for dynamic dispatch
+     */
     case Method(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
 
+    /**
+     * PublicMethod Expression
+     * Defines a "public" access level method - can be accessed from within class's body as well as from instance object, also candidate for dynamic dispatch
+     */
     case PublicMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
 
+    /**
+     * ProtectedMethod Expression
+     * Defines a "protected" access level method - can be accessed from within class's body only, also candidate for dynamic dispatch
+     */
     case ProtectedMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
 
+    /**
+     * PrivateMethod Expression
+     * Defines a method with "private" access - cannot be referenced by any instance outside the class's body and is not a candidate for dynamic dispatch
+     */
     case PrivateMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
 
+    /**
+     * NewObject Expression
+     * Return a new object by instantiating the class, classRef evaluates to a class's reference and constructorArgs are the set expression passed as arguments to constructor of Class
+     * analogous to new ClassName(params)
+     */
     case NewObject(classRef: SetExpression, constructorArgs: SetExpression*)
 
+    /**
+     * ObjectInstanceOf Expression
+     * Return true if objectRef's evaluation is an instance or object created by instantiating classRef's evaluation
+     */
     case ObjectInstanceOf(objectRef: SetExpression, classRef: SetExpression)
-
 
     /** This method evaluates SetExpressions
      *  Description - The body of this method is the implementation of above abstract data types
@@ -500,6 +596,7 @@ object SetTheoryDSL {
       // Equals Expression Implementation
       case Equals(exp1, exp2) => exp1.eval.equals(exp2.eval)
 
+      // Returns a reference to the class in current scope
       case ClassRef(cName) =>
         val clsRef = getClassRef(cName, currentEnvironment(index))
         if clsRef == null then
@@ -507,17 +604,20 @@ object SetTheoryDSL {
         else
           clsRef
 
+      // Returns the reference to class from an instantiated object
       case ClassRefFromObject(cName, objRef) =>
         val objectToRef = objRef.eval.asInstanceOf[ObjectStruct]
         objectToRef.getInnerClass(cName)
 
+      // Returns the reference to class from an outer/enclosing object
       case ClassRefFromClass(cName, classRef) =>
         val outerClassRef = classRef.eval.asInstanceOf[ClassStruct]
         if outerClassRef.memberClasses.get(cName).isEmpty then
-          throw new Exception("inner class not found")
+          throw new Exception(cName + " : no such inner class found")
         else
           outerClassRef.memberClasses(cName)
 
+      // Class definition - check if class not declared already
       case ClassDef(cName, clsExpArgs*) =>
         val clsRef = getClassRef(cName, currentEnvironment(index))
         if clsRef == null then
@@ -526,6 +626,7 @@ object SetTheoryDSL {
         else
           throw new Exception(cName + " class already exists.")
 
+      // Class definition - with super class/Extends/inheriting the super class
       case ClassDefThatExtends(cName, sClass, clsExpArgs*) =>
         val clsRef = getClassRef(cName, currentEnvironment(index))
         if clsRef == null then
@@ -535,84 +636,128 @@ object SetTheoryDSL {
         else
           throw new Exception(cName + " class already exists.")
 
-
+      // Params expression - used to specify params to methods and constructor
       case ParamsExp(pExpArgs*) =>
         val params = for p <- pExpArgs yield p.eval
         params
 
+      // Param Expression
       case Param(s) => s
 
+      // NewObject Expression - returns new object
       case NewObject(classRef, cArgs*) =>
         val newObject = ObjectStruct(classRef.eval.asInstanceOf[ClassStruct], cArgs)
         newObject
 
+      // InvokeMethod Expression - used to call method from which the Class constructor and other methods
       case InvokeMethod(mName, params*) =>
         val currentObject = currentEnvironment(index).bindingEnvironment("this")
         currentObject.asInstanceOf[ObjectStruct].invokeMethod(mName, params, false)
 
+      // InvokeMethodOfObject Expression
       case InvokeMethodOfObject(mName, objectRef, params*) =>
         val currentObject = objectRef.eval
         currentEnvironment(index).bindingEnvironment.put("this", currentObject)
         currentObject.asInstanceOf[ObjectStruct].invokeMethod(mName, params, true)
 
+      // Field Expression - Returns single field - analogous to this.field
       case Field(fName) =>
         val currentObject = currentEnvironment(index).bindingEnvironment("this")
         currentObject.asInstanceOf[ObjectStruct].getField(fName, false)
 
+      // FieldFromObject Expression - Returns field from object, analogous to object.field
       case FieldFromObject(fName, objRef) =>
         val currentObject = objRef.eval
         currentEnvironment(index).bindingEnvironment.put("this", currentObject)
         currentObject.asInstanceOf[ObjectStruct].getField(fName, true)
 
+      // SetField Expression - Updates the value of the field, analogous to assigning value to this.field
       case SetField(fName, exp) =>
         val currentObject = currentEnvironment(index).bindingEnvironment("this")
         currentObject.asInstanceOf[ObjectStruct].setField(fName, exp.eval, false)
 
+      // SetFieldFromObject Expression - Updates the value of the field by referencing the object from outside the clas body, analogous to assigning value to object.field
       case SetFieldFromObject(fName, objRef, exp) =>
         val currentObject = objRef.eval
         currentEnvironment(index).bindingEnvironment.put("this", currentObject)
         currentObject.asInstanceOf[ObjectStruct].setField(fName, exp.eval, true)
 
+      // ObjectInstanceOf Expression - returns a Boolean which represents whether the object is an instantiation of a particular class or not
       case ObjectInstanceOf(objRef, clsRef) => objRef.eval.asInstanceOf[ObjectStruct].isInstanceOf(clsRef.eval.asInstanceOf[ClassStruct])
     }
 
+    /**
+     * This method resolves the Expressions which are members of the class, includes class field declaration, definiting constructor, definiting methods, defining inner/nested classes
+     * @param classRef
+     * @return
+     */
     private def resolveClassMembers(classRef: ClassStruct): Any = this match {
+      // Constructor Expression - will not be evaluated separately
       case Constructor(pExp, body*) =>
         classRef.classConstructor.put("constructor", MethodStruct(pExp, body))
+
+      // CreateField Expression
       case CreateField(fName) =>
         classRef.classFieldTypes("defaultFields").add(fName)
         classRef.classFieldNames.add(fName)
+      // CreatePublicField Expression
       case CreatePublicField(fName) =>
         classRef.classFieldTypes("publicFields").add(fName)
         classRef.classFieldNames.add(fName)
+
+      // CreateProtectedField Expression
       case CreateProtectedField(fName) =>
         classRef.classFieldTypes("protectedFields").add(fName)
         classRef.classFieldNames.add(fName)
+
+      // CreatePrivateField Expression
       case CreatePrivateField(fName) =>
         classRef.classFieldTypes("privateFields").add(fName)
         classRef.classFieldNames.add(fName)
+
+      // Method Expression
       case Method(mName, args, body*) =>
         classRef.classMethodsTypes("defaultMethods").add(mName)
         classRef.classMethodMap.put(mName, MethodStruct(args, body))
+
+      // PublicMethod Expression
       case PublicMethod(mName, args, body*) =>
         classRef.classMethodsTypes("publicMethods").add(mName)
         classRef.classMethodMap.put(mName, MethodStruct(args, body))
+
+      // ProtectedMethod Expression
       case ProtectedMethod(mName, args, body*) =>
         classRef.classMethodsTypes("protectedMethods").add(mName)
         classRef.classMethodMap.put(mName, MethodStruct(args, body))
+
+      // PrivateMethod Expression
       case PrivateMethod(mName, args, body*) =>
         classRef.classMethodsTypes("privateMethods").add(mName)
         classRef.classMethodMap.put(mName, MethodStruct(args, body))
+
+      // ClassDef Expression
       case ClassDef(cName, clsExpArgs*) =>
         val innerClass = this.declareClass(cName, null, clsExpArgs)
         classRef.memberClasses.put(cName, innerClass)
+
+      // ClassDefThatExtends Expression
       case ClassDefThatExtends(cName, sClass, clsExpArgs*) =>
         val superClassRef = sClass.eval.asInstanceOf[ClassStruct]
         val innerClass = this.declareClass(cName, superClassRef, clsExpArgs)
         classRef.memberClasses.put(cName, innerClass)
+
+      // ClassRef Expression
       case ClassRef(cName) => this.eval
     }
 
+    /**
+     *
+     * This method creates or declares the class and returns a ClassStruct Object
+     * @param cName: String - class name to be created
+     * @param parent: ClassStruct - parent class which this class is trying to inherit
+     * @param classBody: Sequence of SetExpression which are part of class body (listed in method resolveClassMembers)
+     * @return
+     */
     private def declareClass(cName: String, parent: ClassStruct, classBody: Seq[SetExpression]): ClassStruct =
       val constructorMap: methodMapType = createClassConstructorMap()
       val fieldsMap: Map[String, SetStringType] = createClassFieldsMap()
@@ -634,6 +779,8 @@ object SetTheoryDSL {
    * Main Function, entry point to the application
    */
   @main def runSetTheoryDSL(): Unit = {
+
+    println("Program runs successfully")
     import SetExpression.*
 
 //    ClassDef(
