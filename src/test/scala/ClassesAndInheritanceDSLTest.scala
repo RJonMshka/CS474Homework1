@@ -1,7 +1,7 @@
-import org.scalatest._
+import org.scalatest.*
 import org.scalatest.funspec.AnyFunSpec
 import matchers.should.Matchers.*
-import SetTheoryDSL.SetExpression.*
+import SetTheoryDSL.SetExpression.{PublicMethod, *}
 
 import scala.collection.mutable
 
@@ -34,6 +34,26 @@ class ClassesAndInheritanceDSLTest extends AnyFunSpec {
             "m2",
             ParamsExp(),
             Field("f2")
+          ),
+          PublicMethod(
+            "m3",
+            ParamsExp(),
+            Field("f2")
+          ),
+          ProtectedMethod(
+            "m5",
+            ParamsExp(Param("x")),
+            Variable("x")
+          ),
+          PrivateMethod(
+            "m6",
+            ParamsExp(),
+            Value("private_value")
+          ),
+          Method(
+            "m7",
+            ParamsExp(),
+            Variable("default value")
           )
         ).eval
         Assign( "object1", NewObject( ClassRef("ClassOne"), Value(3), Value(4) ) ).eval
@@ -93,9 +113,24 @@ class ClassesAndInheritanceDSLTest extends AnyFunSpec {
             Value(100)
           ),
           PublicMethod(
-            "m3",
+            "m4",
             ParamsExp(),
             Field("f2")
+          ),
+          PublicMethod(
+            "m9",
+            ParamsExp(Param("x")),
+            InvokeMethod("m5", Variable("x"))
+          ),
+          PublicMethod(
+            "m10",
+            ParamsExp(),
+            InvokeMethod("m6")
+          ),
+          PublicMethod(
+            "m11",
+            ParamsExp(),
+            InvokeMethod("m7")
           )
         ).eval
 
@@ -108,10 +143,81 @@ class ClassesAndInheritanceDSLTest extends AnyFunSpec {
       }
 
       it("should prove that protected fields are also inherited") {
+        assert( InvokeMethodOfObject("m4", Variable("object2") ).eval == 11  )
+      }
+
+      it("should throw an error if superClass's private field is accessed - as private fields are not inherited") {
+        assertThrows[Exception] {
+          FieldFromObject("f3", Variable("object2") ).eval
+        }
+      }
+
+      it("should throw an error if superClass's default field is accessed - as default fields are not inherited") {
+        assertThrows[Exception] {
+          FieldFromObject("f4", Variable("object2") ).eval
+        }
+      }
+
+      it("should inherit public methods of its parent class and invoke those methods if not overridden in child class's body") {
         assert( InvokeMethodOfObject("m3", Variable("object2") ).eval == 11  )
       }
 
+      it("should perform dynamic dispatch of method from super class's method") {
+        assert( InvokeMethodOfObject("m1", Variable("object2") ).eval == 100  )
+      }
 
+      it("should also inherit protected methods of its parent class") {
+        assert( InvokeMethodOfObject("m9", Variable("object2"), Value(55) ).eval == 55  )
+      }
+
+      it("should throw error if try to access private methods of its parent") {
+        assertThrows[Exception] {
+          InvokeMethodOfObject("m10", Variable("object2") ).eval
+        }
+      }
+
+      it("should throw error if try to access default methods of its parent") {
+        assertThrows[Exception] {
+          InvokeMethodOfObject("m11", Variable("object2") ).eval
+        }
+      }
+
+      it("should throw error if try to directly invoke its or its parent's protected methods") {
+        assertThrows[Exception] {
+          InvokeMethodOfObject("m5", Variable("object2"), Value(20) ).eval
+        }
+      }
+
+      it("should create an inner class and access it using enclosing class to create object") {
+        ClassDef(
+          "OuterClass",
+          CreatePublicField("f1"),
+          Constructor(
+            ParamsExp(),
+            SetField("f1", Value("field_value"))
+          ),
+          ClassDef(
+            "InnerClass",
+            CreatePublicField("f2"),
+            Constructor(
+              ParamsExp(),
+              SetField("f2", Value("inner_field_value"))
+            )
+          )
+        ).eval
+
+        Assign("object3", NewObject( ClassRefFromClass("InnerClass", ClassRef("OuterClass") ) ) ).eval
+
+        assert( FieldFromObject("f2", Variable("object3") ).eval == "inner_field_value" )
+      }
+
+      it("should create an inner class and access it using enclosing class's instance") {
+        Assign("object4", NewObject( ClassRef("OuterClass") ) ).eval
+
+        Assign("object5", NewObject( ClassRefFromObject("InnerClass", Variable("object4") ) ) ).eval
+
+        assert( FieldFromObject("f2", Variable("object5") ).eval == "inner_field_value" )
+      }
 
     }
 

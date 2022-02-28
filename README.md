@@ -1,6 +1,6 @@
 # Rajat Kumar (UIN: 653922910)
 
-## CS474 Homework 1 - Submission
+## CS474 Homework 2 - Submission
 
 ### Set Theory DSL - SetPlayground
 
@@ -15,7 +15,7 @@ Set Theory DSL is a Domain Specific Language created to perform simple operation
 
 1. Install [IntelliJ](https://www.jetbrains.com/student/) (this link is for student edition, you can download other as well).
 2. Use [github](https://github.com/RJonMshka/CS474Homework1.git) repo for this project and clone it into your machine using git bash on Windows and terminal on MacOS.
-3. Switch to the `master` branch if the default branch is something else.
+3. Switch to the `homework2` branch if the default branch is something else.
 4. Open IntelliJ and go to `File > New > Project from existing Source`, or `File > New > Project from version control`. For the second option, you have to directly provide git repo link and no need to clone the git repo separately.
 5. Make sure you have Java JDK and scala installed on your system. Java JDK between versions 8 and 17 are required to run this project.
 6. We are using Scala version `3.1.1`. Please go to its [docs](https://docs.scala-lang.org/scala3/) for better understanding. You can download Scala 3 from [here](https://www.scala-lang.org/download/).

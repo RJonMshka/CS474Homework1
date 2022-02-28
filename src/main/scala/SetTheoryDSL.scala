@@ -1,4 +1,6 @@
 /** Important imports */
+import SetTheoryDSL.SetExpression.{ClassDef, Constructor, CreatePublicField, ParamsExp, SetField, Value}
+
 import collection.mutable
 import scala.annotation.tailrec
 import scala.language.postfixOps
