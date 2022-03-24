@@ -1,5 +1,6 @@
 /** Important imports */
-import SetTheoryDSL.SetExpression.{ClassDef, Constructor, CreatePublicField, ParamsExp, SetField, Value}
+import SetTheoryDSL.InterfaceStruct
+import SetTheoryDSL.SetExpression.{AbstractClassDef, ClassDef, Constructor, CreatePublicField, ParamsExp, SetField, Value}
 
 import collection.mutable
 import scala.annotation.tailrec
@@ -14,6 +15,17 @@ object SetTheoryDSL {
   type mutMapAny = mutable.Map[String, Any]
   type mutMapSetExp = mutable.Map[String, SetExpression]
   private type methodMapType = mutable.Map[String, MethodStruct]
+
+  enum AccessProperties:
+    case Public
+    case Private
+    case Protected
+    case DefAccess
+
+  enum ImplProperties:
+    case Default
+    case Abstract
+    case DefImplementation
 
   /**
    * Creating private variables, a way to maintain pointer to current referencing environment
@@ -39,6 +51,21 @@ object SetTheoryDSL {
     // This field holds the binding environment (binding variables) in a HashMap referring to the referencing environment of that particular Scope object
     val bindingEnvironment: mutMapAny = mutable.Map()
     val classes: mutable.Map[String, ClassStruct] = mutable.Map()
+    val interfaces: mutable.Map[String, InterfaceStruct] = mutable.Map()
+  }
+
+  private class InterfaceStruct(intName: String, fields: Map[String, SetStringType]) {
+    val interfaceName: String = intName
+    val interfaceFieldTypes: Map[String, SetStringType] = fields
+    val interfaceFieldNames: mutable.Set[String] = mutable.Set()
+    val interfaceMethodsTypes: mutable.Map[String, Map[String, Any]] = mutable.Map()
+    val interfaceMethodMap: mutable.Map[String, MethodStruct] = mutable.Map()
+
+    val interfaceRelations: mutable.Map[String, Any] = mutable.Map(
+      "memberClasses" -> mutable.Map[String, ClassStruct](),
+      "memberInterfaces" -> mutable.Map[String, InterfaceStruct](),
+      "superInterface" -> null
+    )
   }
 
   /**
@@ -54,18 +81,20 @@ object SetTheoryDSL {
      cName: String,
      constructor: methodMapType,
      fields: Map[String, SetStringType],
-     methods: Map[String, SetStringType],
-     innerClasses: mutable.Map[String, ClassStruct],
-     parent: ClassStruct
+     val isAbstract: Boolean
    ) {
     val className: String = cName
     val classConstructor: methodMapType = constructor
     val classFieldTypes: Map[String, SetStringType] = fields
     val classFieldNames: mutable.Set[String] = mutable.Set()
-    val classMethodsTypes: Map[String, SetStringType] = methods
+    val classMethodsTypes: mutable.Map[String, Map[String, Any]] = mutable.Map()
     val classMethodMap: mutable.Map[String, MethodStruct] = mutable.Map()
-    val memberClasses: mutable.Map[String, ClassStruct] = innerClasses
-    val parentClass: ClassStruct = parent
+    val classRelations: mutable.Map[String, Any] = mutable.Map(
+      "memberClasses" -> mutable.Map[String, ClassStruct](),
+      "superClass" -> null,
+      "superInterfaces" -> mutable.Set[InterfaceStruct](),
+      "memberInterfaces" -> mutable.Map[String, InterfaceStruct]()
+    )
   }
 
   /**
@@ -100,7 +129,7 @@ object SetTheoryDSL {
      */
     private def executeConstructor(classRef: ClassStruct, paramValues: Seq[Any]): Unit =
       // recursively go to the top most class
-      if classRef.parentClass != null then executeConstructor(classRef.parentClass, paramValues)
+      if classRef.classRelations("superClass") != null then executeConstructor(classRef.classRelations("superClass").asInstanceOf[ClassStruct], paramValues)
 
       // clear fieldsMap map
       fieldsMap.clear()
@@ -197,17 +226,17 @@ object SetTheoryDSL {
     @tailrec
     private def dynamicDispatch(mName: String, classRef: ClassStruct, isCalledFromOutside: Boolean): MethodStruct =
       // if not part of the current class, go to its parent class
-      if !classRef.classMethodMap.keys.toSet.contains(mName) && classRef.parentClass != null then
-        dynamicDispatch(mName, classRef.parentClass, isCalledFromOutside)
-      else if classRef.classMethodMap.keys.toSet.contains(mName) && isCalledFromOutside then
+      if !classRef.classMethodMap.contains(mName) && classRef.classRelations("superClass") != null then
+        dynamicDispatch(mName, classRef.classRelations("superClass").asInstanceOf[ClassStruct], isCalledFromOutside)
+      else if classRef.classMethodMap.contains(mName) && isCalledFromOutside then
       // check if in default, private or protected method and is called from outside
-        if !classRef.classMethodsTypes("publicMethods").contains(mName) then
+        if !( classRef.classMethodsTypes(mName)("accessProp") == AccessProperties.Public ) then
           throw new Exception("cannot access private or default method from an object")
         else
           classRef.classMethodMap(mName)
-      else if classRef.classMethodMap.keys.toSet.contains(mName) && !isCalledFromOutside then
-        if classRef.classMethodsTypes("defaultMethods").contains(mName) || classRef.classMethodsTypes("privateMethods").contains(mName) then
-          throw new Exception("default and private methods cannot be inherited")
+      else if classRef.classMethodMap.contains(mName) && !isCalledFromOutside then
+        if classRef.classMethodsTypes(mName)("accessProp") == AccessProperties.DefAccess || classRef.classMethodsTypes(mName)("accessProp") == AccessProperties.Private then
+          throw new Exception("Default and Private access level methods cannot be inherited")
         else
         // can access public and protected methods from inside
           classRef.classMethodMap(mName)
@@ -252,10 +281,10 @@ object SetTheoryDSL {
      * @return ClassStruct - inner class
      */
     def getInnerClass(cName: String): ClassStruct =
-      if !objectClass.memberClasses.contains(cName) then
+      if !objectClass.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].contains(cName) then
         throw new Error("nested class not found")
       else
-        objectClass.memberClasses(cName)
+        objectClass.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]](cName)
 
     /**
      * Return a Boolean representing the object is an instance of a particular class
@@ -268,11 +297,11 @@ object SetTheoryDSL {
 
 
   /**
-   * Helper method: createClassFieldsMap
+   * Helper method: createFieldsMap
    * Create map data structure for representing fields in class
    * @return Map of String -> Set, mapping fields with different access modifiers in single set
    */
-  private def createClassFieldsMap(): Map[String, SetStringType] =
+  private def createFieldsMap(): Map[String, SetStringType] =
     Map(
       "defaultFields" -> mutable.Set(),
       "publicFields" -> mutable.Set(),
@@ -289,20 +318,6 @@ object SetTheoryDSL {
     mutable.Map[String, MethodStruct](
       "constructor" -> constructor
     )
-
-  /**
-   * Helper method: createClassMethodsMap
-   * Create map data structure for representing methods in class
-   * @return Map of String -> Set[String](method names)
-   */
-  private def createClassMethodsMap(): Map[String, SetStringType] =
-    Map(
-      "defaultMethods" -> mutable.Set(),
-      "publicMethods" -> mutable.Set(),
-      "protectedMethods" -> mutable.Set(),
-      "privateMethods" -> mutable.Set()
-    )
-
 
   /** Returns data on type Any stored in referencing environment and if not found, then looks into parent scope's environment
    *
@@ -333,6 +348,150 @@ object SetTheoryDSL {
     else
       getClassRef(cName, scopeEnv.scopeParent)
 
+  @tailrec
+  private def getInterfaceRef(intName: String, scopeEnv: Scope): InterfaceStruct =
+    if scopeEnv.interfaces.contains(intName) then
+    // class exist in this scope
+      scopeEnv.interfaces(intName)
+    else if scopeEnv.scopeParent == null then
+      null
+    else
+      getInterfaceRef(intName, scopeEnv.scopeParent)
+
+  /**
+   *
+   * This method creates or declares the class and returns a ClassStruct Object
+   *
+   * @param cName     : String - class name to be created
+   * @param parent    : ClassStruct - parent class which this class is trying to inherit
+   * @param classBody : Sequence of SetExpression which are part of class body (listed in method resolveClassMembers)
+   * @return
+   */
+  private def declareClass(cName: String, classBody: Seq[SetExpression], isAbstract: Boolean): ClassStruct =
+    val constructorMap: methodMapType = createClassConstructorMap()
+    val fieldsMap: Map[String, SetStringType] = createFieldsMap()
+    val newClassRef = ClassStruct(
+      cName,
+      constructorMap,
+      fieldsMap,
+      isAbstract
+    )
+    classBody.foreach( resolveClassMembers(_, newClassRef))
+    // todo: check if abstract and contains abstract method, if not then throw error
+    newClassRef
+
+  private def declareInterface(intName: String, intBody: Seq[SetExpression]): InterfaceStruct =
+    val fieldsMap: Map[String, SetStringType] = createFieldsMap()
+    val newInterfaceRef = InterfaceStruct(
+      intName,
+      fieldsMap
+    )
+    intBody.foreach( resolveInterfaceMembers(_, newInterfaceRef) )
+    // todo: check if there are only abstract and default methods
+    newInterfaceRef
+
+  /**
+   * This method resolves the Expressions which are members of the class, includes class field declaration, defining constructor, defining methods, defining inner/nested classes
+   *
+   * @param classRef - class reference on which these members are called
+   * @return Any
+   */
+  private def resolveClassMembers(setExp: SetExpression, classRef: ClassStruct): Any = setExp match {
+    // Constructor Expression - will not be evaluated separately
+    case Constructor(pExp, body*) =>
+      if classRef.classConstructor("constructor") != null then throw new Exception("Only single constructor can be defined for a Class")
+      classRef.classConstructor.put("constructor", MethodStruct(pExp, body))
+
+    case SetExpression.Extends(sClassRef) =>
+      val superClassRef = sClassRef.eval.asInstanceOf[ClassStruct]
+      if classRef.classRelations("superClass") != null then throw new Exception("A Class can extend only a single class")
+      classRef.classRelations.put("superClass", superClassRef)
+
+    case SetExpression.Implements(sInterfaceRefs*) =>
+      // todo: check circular implementations / cannot implement the same interface more than once
+      sInterfaceRefs.foreach(
+        sRef => classRef.classRelations("superInterfaces")
+          .asInstanceOf[mutable.Set[InterfaceStruct]]
+          .add(sRef.eval.asInstanceOf[InterfaceStruct])
+      )
+
+    // CreateField Expression
+    case SetExpression.CreateField(fName) =>
+      classRef.classFieldTypes("defaultFields").add(fName)
+      classRef.classFieldNames.add(fName)
+    // CreatePublicField Expression
+    case SetExpression.CreatePublicField(fName) =>
+      classRef.classFieldTypes("publicFields").add(fName)
+      classRef.classFieldNames.add(fName)
+
+    // CreateProtectedField Expression
+    case SetExpression.CreateProtectedField(fName) =>
+      classRef.classFieldTypes("protectedFields").add(fName)
+      classRef.classFieldNames.add(fName)
+
+    // CreatePrivateField Expression
+    case SetExpression.CreatePrivateField(fName) =>
+      classRef.classFieldTypes("privateFields").add(fName)
+      classRef.classFieldNames.add(fName)
+
+    // Method Expression
+    case SetExpression.Method(mName, accessProp, implProp, args, body*) =>
+      val propMap: Map[String, Any] = Map( "accessProp" -> accessProp, "implProp" -> implProp)
+      // todo: handle exceptions for access types
+      classRef.classMethodsTypes.put(mName, propMap)
+      classRef.classMethodMap.put(mName, MethodStruct(args, body))
+
+    // ClassDef Expression
+    case SetExpression.ClassDef(cName, clsExpArgs*) =>
+      val innerClass = declareClass(cName, clsExpArgs, false)
+      classRef.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].put(cName, innerClass)
+
+    case SetExpression.AbstractClassDef(cName, clsExpArgs*) =>
+      val innerClass = declareClass(cName, clsExpArgs, true)
+      classRef.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].put(cName, innerClass)
+  }
+
+  private def resolveInterfaceMembers(setExp: SetExpression, interfaceRef: InterfaceStruct): Any = setExp match {
+    case SetExpression.Extends(sIntRef) =>
+      val superInterfaceRef = sIntRef.eval.asInstanceOf[InterfaceStruct]
+      if interfaceRef.interfaceRelations("superInterface") != null then throw new Exception("An Interface can extend only a single Interface")
+      interfaceRef.interfaceRelations.put("superInterface", superInterfaceRef)
+
+    // CreateField Expression
+    case SetExpression.CreateField(fName) =>
+      interfaceRef.interfaceFieldTypes("defaultFields").add(fName)
+      interfaceRef.interfaceFieldNames.add(fName)
+    // CreatePublicField Expression
+    case SetExpression.CreatePublicField(fName) =>
+      interfaceRef.interfaceFieldTypes("publicFields").add(fName)
+      interfaceRef.interfaceFieldNames.add(fName)
+
+    // CreateProtectedField Expression
+    case SetExpression.CreateProtectedField(fName) =>
+      interfaceRef.interfaceFieldTypes("protectedFields").add(fName)
+      interfaceRef.interfaceFieldNames.add(fName)
+
+    // CreatePrivateField Expression
+    case SetExpression.CreatePrivateField(fName) =>
+      interfaceRef.interfaceFieldTypes("privateFields").add(fName)
+      interfaceRef.interfaceFieldNames.add(fName)
+
+    // Method Expression
+    case SetExpression.Method(mName, accessProp, implProp, args, body*) =>
+      val propMap: Map[String, Any] = Map( "accessProp" -> accessProp, "implProp" -> implProp)
+      // todo: handle exceptions for access types
+      interfaceRef.interfaceMethodsTypes.put(mName, propMap)
+      interfaceRef.interfaceMethodMap.put(mName, MethodStruct(args, body))
+
+    // ClassDef Expression
+    case SetExpression.ClassDef(cName, clsExpArgs*) =>
+      val innerClass = declareClass(cName, clsExpArgs, false)
+      interfaceRef.interfaceRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].put(cName, innerClass)
+
+    case SetExpression.AbstractClassDef(cName, clsExpArgs*) =>
+      val innerClass = declareClass(cName, clsExpArgs, true)
+      interfaceRef.interfaceRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].put(cName, innerClass)
+  }
 
   /** Enumeration for different types of Set Expressions
    *
@@ -431,12 +590,7 @@ object SetTheoryDSL {
      */
     case ClassDef(className: String, classExpArgs: SetExpression*)
 
-    /**
-     * ClassDefThatExtends Expression
-     * Defines a class similar to above, but also Extends or inherit another class (passed as second argument)
-     * Only Single class inheritance is allowed
-     */
-    case ClassDefThatExtends(cName: String, superClass: SetExpression, classExpArgs: SetExpression*)
+    case AbstractClassDef(className: String, classExpArgs: SetExpression*)
 
     /**
      * ClassRef Expression
@@ -538,25 +692,7 @@ object SetTheoryDSL {
      * Method Expression
      * Defines a method with default access - same as private - cannot be referenced by any instance outside the class's body and is not a candidate for dynamic dispatch
      */
-    case Method(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
-
-    /**
-     * PublicMethod Expression
-     * Defines a "public" access level method - can be accessed from within class's body as well as from instance object, also candidate for dynamic dispatch
-     */
-    case PublicMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
-
-    /**
-     * ProtectedMethod Expression
-     * Defines a "protected" access level method - can be accessed from within class's body only, also candidate for dynamic dispatch
-     */
-    case ProtectedMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
-
-    /**
-     * PrivateMethod Expression
-     * Defines a method with "private" access - cannot be referenced by any instance outside the class's body and is not a candidate for dynamic dispatch
-     */
-    case PrivateMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+    case Method(methodName: String, accessProp: AccessProperties, impProp: ImplProperties, argExp: SetExpression, mBodyExpArgs: SetExpression*)
 
     /**
      * NewObject Expression
@@ -570,6 +706,16 @@ object SetTheoryDSL {
      * Return true if objectRef's evaluation is an instance or object created by instantiating classRef's evaluation
      */
     case ObjectInstanceOf(objectRef: SetExpression, classRef: SetExpression)
+
+    case MethodAccessProperty(prop: AccessProperties)
+
+    case MethodImplProperty(prop: ImplProperties)
+
+    case Extends(superClassRef: SetExpression)
+
+    case Implements(interfaceRefs: SetExpression*)
+
+    case InterfaceDef(intName: String, interfaceExpArgs: SetExpression*)
 
     /** This method evaluates SetExpressions
      * Description - The body of this method is the implementation of above abstract data types
@@ -693,27 +839,25 @@ object SetTheoryDSL {
       // Returns the reference to class from an outer/enclosing object
       case ClassRefFromClass(cName, classRef) =>
         val outerClassRef = classRef.eval.asInstanceOf[ClassStruct]
-        if outerClassRef.memberClasses.get(cName).isEmpty then
+        if outerClassRef.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].get(cName).isEmpty then
           throw new Exception(cName + " : no such inner class found")
         else
-          outerClassRef.memberClasses(cName)
+          outerClassRef.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]](cName)
 
       // Class definition - check if class not declared already
       case ClassDef(cName, clsExpArgs*) =>
         val clsRef = getClassRef(cName, currentEnvironment(index))
         if clsRef == null then
-          val newClass = this.declareClass(cName, null, clsExpArgs)
+          val newClass = declareClass(cName, clsExpArgs, false)
           currentEnvironment(0).classes.put(cName, newClass)
         else
           throw new Exception(cName + " class already exists.")
 
-      // Class definition - with super class/Extends/inheriting the super class
-      case ClassDefThatExtends(cName, sClass, clsExpArgs*) =>
+      case AbstractClassDef(cName, clsExpArgs*) =>
         val clsRef = getClassRef(cName, currentEnvironment(index))
         if clsRef == null then
-          val superClassRef = sClass.eval.asInstanceOf[ClassStruct]
-          val newClass = this.declareClass(cName, superClassRef, clsExpArgs)
-          currentEnvironment(index).classes.put(cName, newClass)
+          val newClass = declareClass(cName, clsExpArgs, true)
+          currentEnvironment(0).classes.put(cName, newClass)
         else
           throw new Exception(cName + " class already exists.")
 
@@ -767,95 +911,9 @@ object SetTheoryDSL {
       case ObjectInstanceOf(objRef, clsRef) => objRef.eval.asInstanceOf[ObjectStruct].isInstanceOf(clsRef.eval.asInstanceOf[ClassStruct])
     }
 
-    /**
-     * This method resolves the Expressions which are members of the class, includes class field declaration, defining constructor, defining methods, defining inner/nested classes
-     *
-     * @param classRef - class reference on which these members are called
-     * @return Any
-     */
-    private def resolveClassMembers(classRef: ClassStruct): Any = (this: @unchecked) match {
-      // Constructor Expression - will not be evaluated separately
-      case Constructor(pExp, body*) =>
-        classRef.classConstructor.put("constructor", MethodStruct(pExp, body))
 
-      // CreateField Expression
-      case CreateField(fName) =>
-        classRef.classFieldTypes("defaultFields").add(fName)
-        classRef.classFieldNames.add(fName)
-      // CreatePublicField Expression
-      case CreatePublicField(fName) =>
-        classRef.classFieldTypes("publicFields").add(fName)
-        classRef.classFieldNames.add(fName)
 
-      // CreateProtectedField Expression
-      case CreateProtectedField(fName) =>
-        classRef.classFieldTypes("protectedFields").add(fName)
-        classRef.classFieldNames.add(fName)
 
-      // CreatePrivateField Expression
-      case CreatePrivateField(fName) =>
-        classRef.classFieldTypes("privateFields").add(fName)
-        classRef.classFieldNames.add(fName)
-
-      // Method Expression
-      case Method(mName, args, body*) =>
-        classRef.classMethodsTypes("defaultMethods").add(mName)
-        classRef.classMethodMap.put(mName, MethodStruct(args, body))
-
-      // PublicMethod Expression
-      case PublicMethod(mName, args, body*) =>
-        classRef.classMethodsTypes("publicMethods").add(mName)
-        classRef.classMethodMap.put(mName, MethodStruct(args, body))
-
-      // ProtectedMethod Expression
-      case ProtectedMethod(mName, args, body*) =>
-        classRef.classMethodsTypes("protectedMethods").add(mName)
-        classRef.classMethodMap.put(mName, MethodStruct(args, body))
-
-      // PrivateMethod Expression
-      case PrivateMethod(mName, args, body*) =>
-        classRef.classMethodsTypes("privateMethods").add(mName)
-        classRef.classMethodMap.put(mName, MethodStruct(args, body))
-
-      // ClassDef Expression
-      case ClassDef(cName, clsExpArgs*) =>
-        val innerClass = this.declareClass(cName, null, clsExpArgs)
-        classRef.memberClasses.put(cName, innerClass)
-
-      // ClassDefThatExtends Expression
-      case ClassDefThatExtends(cName, sClass, clsExpArgs*) =>
-        val superClassRef = sClass.eval.asInstanceOf[ClassStruct]
-        val innerClass = this.declareClass(cName, superClassRef, clsExpArgs)
-        classRef.memberClasses.put(cName, innerClass)
-
-      // ClassRef Expression
-      case ClassRef(cName) => this.eval
-    }
-
-    /**
-     *
-     * This method creates or declares the class and returns a ClassStruct Object
-     *
-     * @param cName     : String - class name to be created
-     * @param parent    : ClassStruct - parent class which this class is trying to inherit
-     * @param classBody : Sequence of SetExpression which are part of class body (listed in method resolveClassMembers)
-     * @return
-     */
-    private def declareClass(cName: String, parent: ClassStruct, classBody: Seq[SetExpression]): ClassStruct =
-      val constructorMap: methodMapType = createClassConstructorMap()
-      val fieldsMap: Map[String, SetStringType] = createClassFieldsMap()
-      val methodsMap: Map[String, SetStringType] = createClassMethodsMap()
-      val nestedClasses: mutable.Map[String, ClassStruct] = mutable.Map()
-      val newClassRef = ClassStruct(
-        cName,
-        constructorMap,
-        fieldsMap,
-        methodsMap,
-        nestedClasses,
-        parent
-      )
-      classBody.foreach(_.resolveClassMembers(newClassRef))
-      newClassRef
 
 
   /**
