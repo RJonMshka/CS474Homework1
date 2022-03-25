@@ -1,7 +1,7 @@
 import org.scalatest.*
 import org.scalatest.funspec.AnyFunSpec
 import matchers.should.Matchers.*
-import SetTheoryDSL.SetExpression.{PublicMethod, *}
+import SetTheoryDSL.SetExpression.*
 
 import scala.collection.mutable
 
@@ -25,33 +25,39 @@ class ClassesAndInheritanceDSLTest extends AnyFunSpec {
             SetField("f3", Value(1)),
             SetField("f4", Value(2)),
           ),
-          PublicMethod(
+          Method(
             "m1",
+            PublicAccess(),
             ParamsExp(),
             InvokeMethod("m2")
           ),
-          PublicMethod(
+          Method(
             "m2",
+            PublicAccess(),
             ParamsExp(),
             Field("f2")
           ),
-          PublicMethod(
+          Method(
             "m3",
+            PublicAccess(),
             ParamsExp(),
             Field("f2")
           ),
-          ProtectedMethod(
+          Method(
             "m5",
+            ProtectedAccess(),
             ParamsExp(Param("x")),
             Variable("x")
           ),
-          PrivateMethod(
+          Method(
             "m6",
+            PrivateAccess(),
             ParamsExp(),
             Value("private_value")
           ),
           Method(
             "m7",
+            DefAccess(),
             ParamsExp(),
             Variable("default value")
           )
@@ -93,9 +99,9 @@ class ClassesAndInheritanceDSLTest extends AnyFunSpec {
       }
 
       it("Should create another class by extending other - inheriting its accessible fields") {
-        ClassDefThatExtends(
+        ClassDef(
           "ClassTwo",
-          ClassRef("ClassOne"),
+          Extends(ClassRef("ClassOne")),
           CreatePublicField("f5"),
           CreateProtectedField("f6"),
           CreatePrivateField("f7"),
@@ -107,28 +113,33 @@ class ClassesAndInheritanceDSLTest extends AnyFunSpec {
             SetField("f7", Variable("a") ),
             SetField("f8", Variable("b") )
           ),
-          PublicMethod(
+          Method(
             "m2",
+            PublicAccess(),
             ParamsExp(),
             Value(100)
           ),
-          PublicMethod(
+          Method(
             "m4",
+            PublicAccess(),
             ParamsExp(),
             Field("f2")
           ),
-          PublicMethod(
+          Method(
             "m9",
+            PublicAccess(),
             ParamsExp(Param("x")),
             InvokeMethod("m5", Variable("x"))
           ),
-          PublicMethod(
+          Method(
             "m10",
+            PublicAccess(),
             ParamsExp(),
             InvokeMethod("m6")
           ),
-          PublicMethod(
+          Method(
             "m11",
+            PublicAccess(),
             ParamsExp(),
             InvokeMethod("m7")
           )
