@@ -17,12 +17,18 @@ object SetTheoryDSL {
   type mutMapSetExp = mutable.Map[String, SetExpression]
   private type methodMapType = mutable.Map[String, MethodStruct]
 
+  /**
+   * Defining types of access modifier
+   */
   enum AccessProperties:
     case Public
     case Private
     case Protected
     case DefaultAccess
 
+  /**
+   * Implementation properties of methods
+   */
   enum ImplProperties:
     case Default
     case Abstract
@@ -55,8 +61,11 @@ object SetTheoryDSL {
     val interfaces: mutable.Map[String, InterfaceStruct] = mutable.Map()
   }
 
-  private class MethodImplementation(val method: MethodStruct, val implementation: Seq[SetExpression])
-
+  /**
+   * Data Structure for storing interfaces
+   * @param intName - Name of the interface
+   * @param fields - a map of access modifier category string to field names
+   */
   private class InterfaceStruct(intName: String, fields: Map[String, SetStringType]) {
     val interfaceName: String = intName
     val interfaceFieldTypes: Map[String, SetStringType] = fields
@@ -69,51 +78,12 @@ object SetTheoryDSL {
     )
   }
 
-  private def SignatureEquivalent(methodOne: MethodStruct, methodTwo: MethodStruct): Boolean =
-    return methodOne.methodName == methodTwo.methodName
-
-  private def MethodInInterfaceHierarchy(method: MethodStruct, interface: InterfaceStruct): Boolean =
-    if(interface != null) then
-      val matchingMethods = interface.interfaceMethods.filter(m => SignatureEquivalent(m, method))
-      if (matchingMethods.size == 1) then
-        return true
-      else if (matchingMethods.size > 1) then throw new Exception(method.methodName + ": Access to this method is ambiguous")
-      else if (matchingMethods.size == 0) then
-        return MethodInInterfaceHierarchy(method, interface.interfaceRelations("superInterface").asInstanceOf[InterfaceStruct])
-    false
-
-  private def getInheritableAbstractMethods(methodsSet: mutable.Set[MethodStruct]): mutable.Set[MethodStruct] =
-    val abstractMethods = methodsSet
-      .filter(method => ((method.methodAccess == AccessProperties.Public || method.methodAccess == AccessProperties.Protected) && method.methodImplementation == ImplProperties.Abstract) )
-    abstractMethods
-
-  private def getInheritableDefaultMethods(methodsSet: mutable.Set[MethodStruct]): mutable.Set[MethodStruct] =
-    val defaultMethods = methodsSet
-      .filter(method => ((method.methodAccess == AccessProperties.Public || method.methodAccess == AccessProperties.Protected) && method.methodImplementation == ImplProperties.Default) )
-    defaultMethods
-
-  private def getInheritableImplementedMethods(methodsSet: mutable.Set[MethodStruct]): mutable.Set[MethodStruct] =
-    val implMethods = methodsSet
-      .filter(method => ((method.methodAccess == AccessProperties.Public || method.methodAccess == AccessProperties.Protected) && method.methodImplementation == ImplProperties.Implemented) )
-    implMethods
-
-  private def getLocalImplementedMethods(methodsSet: mutable.Set[MethodStruct]): mutable.Set[MethodStruct] =
-    val implMethods = methodsSet
-      .filter(method => ((method.methodAccess == AccessProperties.Private || method.methodAccess == AccessProperties.DefaultAccess) && method.methodImplementation == ImplProperties.Implemented) )
-    implMethods
-
-  private def getSetOfMethodNames(methodsSet: mutable.Set[MethodStruct]): mutable.Set[String] =
-    return methodsSet.map(method => method.methodName)
-
-
   /**
    * Data Structure for storing Classes
    * @param cName - name of class
    * @param constructor - constructor for class - a map with single key "constructor"
    * @param fields - fields map with access modifiers as keys
-   * @param methods - methods map with access modifiers as keys
-   * @param innerClasses - inner classes declared in the body of class
-   * @param parent - parent of the class, from which thr class is inherited
+   * @param isAbstract - a boolean value to represent whether the class is abstract or not
    */
   private class ClassStruct(
      cName: String,
@@ -138,10 +108,18 @@ object SetTheoryDSL {
     val implementedMethods: mutable.Set[MethodStruct] = mutable.Set()
     val localImplementedMethods: mutable.Set[MethodStruct] = mutable.Set()
 
+    /**
+     * This method add the superinterface to class relations
+     * @param sInterface - superInterface reference to be added
+     */
     def addSuperInterface(sInterface: InterfaceStruct): Unit =
       if classRelations("superInterfaces").asInstanceOf[mutable.Set[InterfaceStruct]].contains(sInterface) then throw new Exception("Same Interface cannot be implemented more than once in a single declaration")
       classRelations("superInterfaces").asInstanceOf[mutable.Set[InterfaceStruct]].add(sInterface)
 
+    /**
+     * This method adds method to class methods
+     * @param m - method to be added
+     */
     def addClassMethod(m: MethodStruct): Unit =
       // Exception handling while adding methods
       if(getSetOfMethodNames(classMethods).contains(m.methodName)) then throw new Exception(m.methodName + " already exists in the class")
@@ -158,12 +136,18 @@ object SetTheoryDSL {
       }
       classMethods.add(m)
 
+    /**
+     * This method processes superinterfaces of a class and populates abstract and default methods of parent interfaces
+     * @param sInterface - superinterface to undergo processing
+     */
     private def processSuperInterface(sInterface: InterfaceStruct): Unit =
       // go to the top most interface
       if(sInterface.interfaceRelations("superInterface") != null &&
         !classRelations("inheritedInterfaces").asInstanceOf[mutable.Set[InterfaceStruct]].contains(sInterface)) then
         processSuperInterface(sInterface.interfaceRelations("superInterface").asInstanceOf[InterfaceStruct])
 
+      // if inherited interfaces do not include the interface already, add that interface to inherited interface set and extract its abstract and default methods
+      // Inherited interfaces are used so that an interface whose methods are already inherited or extracted will not be traversed again as it and its parents are already traversed
       if(!classRelations("inheritedInterfaces").asInstanceOf[mutable.Set[InterfaceStruct]].contains(sInterface)) then
         classRelations("inheritedInterfaces").asInstanceOf[mutable.Set[InterfaceStruct]].add(sInterface)
         val absMethodNames = getSetOfMethodNames(abstractMethods)
@@ -173,6 +157,10 @@ object SetTheoryDSL {
         // add/override default methods - should
         getInheritableDefaultMethods(sInterface.interfaceMethods).foreach(m => this.addDefaultMethod(m))
 
+    /**
+     * This method adds a default method to the default methods set
+     * @param m - method which needs to be added
+     */
     private def addDefaultMethod(m: MethodStruct): Unit =
       val filteredDefMethods = defaultImplMethods.filter(method => method.methodName == m.methodName)
       if(filteredDefMethods.size > 0) then
@@ -180,6 +168,10 @@ object SetTheoryDSL {
         defaultImplMethods.remove(methodToRemove)
       defaultImplMethods.add(m)
 
+    /**
+     * This method removes a method from abstract methods set
+     * @param m - method to be removed
+     */
     private def removeFromAbstract(m: MethodStruct): Unit =
       val filteredAbsMethods = abstractMethods.filter(method => method.methodName == m.methodName)
 
@@ -187,17 +179,27 @@ object SetTheoryDSL {
         // signature equivalent, can be removed
         abstractMethods.remove(filteredAbsMethods.head)
 
+    /**
+     * This method processes or captures the methods of all superinterfaces are a class
+     */
     private def processInterfaceMethods(): Unit =
       classRelations("superInterfaces").asInstanceOf[mutable.Set[InterfaceStruct]].foreach(
         superInterface => processSuperInterface(superInterface)
       )
 
+    /**
+     * This method separates out Implemented Methods from abstract methods
+     * @param classRef - Reference of class for which implemented methods need to be processed
+     */
     private def processImplementedMethods(classRef: ClassStruct): Unit =
       // first go to the top
       if classRef.classRelations("superClass").asInstanceOf[ClassStruct] != null then this.processImplementedMethods(classRef.classRelations("superClass").asInstanceOf[ClassStruct])
 
       classRef.implementedMethods.foreach(m => this.removeFromAbstract(m))
 
+    /**
+     * This method process all methods of class, whether its own, its parent class's or the ones belonging to its superinterfaces
+     */
     def processClassMethods(): Unit =
       // first get default and abstract methods of parent/ superClass
       if(classRelations("superClass") != null) {
@@ -219,6 +221,10 @@ object SetTheoryDSL {
 
       this.processImplementedMethods(this)
 
+    /**
+     * This method checks whether the class is actually concrete (with all concrete methods) or not
+     * @return Boolean - represents whether the class is concrete or not
+     */
     def isConcrete(): Boolean =
       if(abstractMethods.isEmpty) then true else false
   }
@@ -473,6 +479,84 @@ object SetTheoryDSL {
     )
 
   /**
+   * Helper method: SignatureEquivalent
+   * Checks if two methods have same signature or not
+   * @return Boolean - represent two methods have same signature or not
+   */
+  private def SignatureEquivalent(methodOne: MethodStruct, methodTwo: MethodStruct): Boolean =
+      methodOne.methodName == methodTwo.methodName
+
+  /**
+   * Helper method: MethodInInterfaceHierarchy
+   * Checks if method is already in hierarchy of an interface
+   * @param method - method to check
+   * @param interface - interface to check
+   * @return Boolean - result of the check
+   */
+  private def MethodInInterfaceHierarchy(method: MethodStruct, interface: InterfaceStruct): Boolean =
+    if(interface != null) then
+      val matchingMethods = interface.interfaceMethods.filter(m => SignatureEquivalent(m, method))
+      if (matchingMethods.size == 1) then
+        return true
+      else if (matchingMethods.size > 1) then throw new Exception(method.methodName + ": Access to this method is ambiguous")
+      else if (matchingMethods.size == 0) then
+        return MethodInInterfaceHierarchy(method, interface.interfaceRelations("superInterface").asInstanceOf[InterfaceStruct])
+    false
+
+  /**
+   * Helper method: getInheritableAbstractMethods
+   * Filters out inheritable (public and protected) abstract methods
+   * @param methodsSet - set of methods
+   * @return - return filtered set
+   */
+  private def getInheritableAbstractMethods(methodsSet: mutable.Set[MethodStruct]): mutable.Set[MethodStruct] =
+    val abstractMethods = methodsSet
+      .filter(method => ((method.methodAccess == AccessProperties.Public || method.methodAccess == AccessProperties.Protected) && method.methodImplementation == ImplProperties.Abstract) )
+    abstractMethods
+
+  /**
+   * Helper method: getInheritableDefaultMethods
+   * Filters out inheritable (public and protected) default methods
+   * @param methodsSet - set of methods
+   * @return - return filtered set
+   */
+  private def getInheritableDefaultMethods(methodsSet: mutable.Set[MethodStruct]): mutable.Set[MethodStruct] =
+    val defaultMethods = methodsSet
+      .filter(method => ((method.methodAccess == AccessProperties.Public || method.methodAccess == AccessProperties.Protected) && method.methodImplementation == ImplProperties.Default) )
+    defaultMethods
+
+  /**
+   * Helper method: getInheritableImplementedMethods
+   * Filters out inheritable (public and protected) methods with implementation (non-default)
+   * @param methodsSet - set of methods
+   * @return - return filtered set
+   */
+  private def getInheritableImplementedMethods(methodsSet: mutable.Set[MethodStruct]): mutable.Set[MethodStruct] =
+    val implMethods = methodsSet
+      .filter(method => ((method.methodAccess == AccessProperties.Public || method.methodAccess == AccessProperties.Protected) && method.methodImplementation == ImplProperties.Implemented) )
+    implMethods
+
+  /**
+   * Helper method: getLocalImplementedMethods
+   * Filters out non-inheritable (private and default access) methods with implementation
+   * @param methodsSet - set of methods
+   * @return - return filtered set
+   */
+  private def getLocalImplementedMethods(methodsSet: mutable.Set[MethodStruct]): mutable.Set[MethodStruct] =
+    val implMethods = methodsSet
+      .filter(method => ((method.methodAccess == AccessProperties.Private || method.methodAccess == AccessProperties.DefaultAccess) && method.methodImplementation == ImplProperties.Implemented) )
+    implMethods
+
+  /**
+   * Helper method: getSetOfMethodNames
+   * map set of methods to map of method names
+   * @param methodsSet - set of method
+   * @return - set of method names
+   */
+  private def getSetOfMethodNames(methodsSet: mutable.Set[MethodStruct]): mutable.Set[String] =
+    return methodsSet.map(method => method.methodName)
+
+  /**
    * Helper method: createClassConstructorMap
    * Create map data structure for representing constructor in class
    * @return Map of String -> MethodStruct (constructor implementation)
@@ -499,7 +583,7 @@ object SetTheoryDSL {
    *
    * @param cName    : String - name of the class
    * @param scopeEnv : Scope - current referencing environment
-   * @return ClassStruct
+   * @return ClassStruct - the class reference
    */
   @tailrec
   private def getClassRef(cName: String, scopeEnv: Scope): ClassStruct =
@@ -511,6 +595,12 @@ object SetTheoryDSL {
     else
       getClassRef(cName, scopeEnv.scopeParent)
 
+  /**
+   * This method finds and returns a reference to interface declared in a particular scope
+   * @param intName: String - name of the interfacce
+   * @param scopeEnv : Scope - current referencing environment
+   * @return InterfaceStruct - the interface reference
+   */
   @tailrec
   private def getInterfaceRef(intName: String, scopeEnv: Scope): InterfaceStruct =
     if scopeEnv.interfaces.contains(intName) then
@@ -524,11 +614,10 @@ object SetTheoryDSL {
   /**
    *
    * This method creates or declares the class and returns a ClassStruct Object
-   *
    * @param cName     : String - class name to be created
-   * @param parent    : ClassStruct - parent class which this class is trying to inherit
    * @param classBody : Sequence of SetExpression which are part of class body (listed in method resolveClassMembers)
-   * @return
+   * @param isAbstract : Boolean to tell that class needs to an abstract one
+   * @return ClassStruct - a class object
    */
   private def declareClass(cName: String, classBody: Seq[SetExpression], isAbstract: Boolean): ClassStruct =
     val constructorMap: methodMapType = createClassConstructorMap()
@@ -547,6 +636,12 @@ object SetTheoryDSL {
     else if(!newClassRef.isConcrete() && !isAbstract) then throw new Exception("Non-concrete classes (classes with abstract method) should be declared abstract")
     newClassRef
 
+  /**
+   * This method creates or declares the interface and returns a InterfaceStruct Object
+   * @param intName     : String - interface name to be created
+   * @param intBody : Sequence of SetExpression which are part of interface body (listed in method resolveInterfaceMembers)
+   * @return InterfaceStruct - a interface object
+   */
   private def declareInterface(intName: String, intBody: Seq[SetExpression]): InterfaceStruct =
     val fieldsMap: Map[String, SetStringType] = createFieldsMap()
     val newInterfaceRef = InterfaceStruct(
@@ -559,7 +654,7 @@ object SetTheoryDSL {
 
   /**
    * This method resolves the Expressions which are members of the class, includes class field declaration, defining constructor, defining methods, defining inner/nested classes
-   *
+   * @param setExp: SetExpression type of member expression
    * @param classRef - class reference on which these members are called
    * @return Any
    */
@@ -569,13 +664,15 @@ object SetTheoryDSL {
       if classRef.classConstructor("constructor") != null then throw new Exception("Only single constructor can be defined for a Class")
       classRef.classConstructor.put("constructor", new MethodStruct("constructor", AccessProperties.DefaultAccess, ImplProperties.Implemented, pExp, body))
 
+    // Extending other classes
     case SetExpression.Extends(sClassRef) =>
       val superClassRef = sClassRef.eval.asInstanceOf[ClassStruct]
       if classRef.classRelations("superClass") != null then throw new Exception("A Class can extend only a single class")
       classRef.classRelations.put("superClass", superClassRef)
 
+      // Implementing multiple interface
     case SetExpression.Implements(sInterfaceRefs*) =>
-      if !classRef.classRelations("superInterfaces").asInstanceOf[mutable.Set[InterfaceStruct]].isEmpty then throw new Exception("Implement expression can only be used once")
+      if classRef.classRelations("superInterfaces").asInstanceOf[mutable.Set[InterfaceStruct]].nonEmpty then throw new Exception("Implement expression can only be used once")
       sInterfaceRefs.foreach( sRef => classRef.addSuperInterface( sRef.eval.asInstanceOf[InterfaceStruct] ) )
 
     // CreateField Expression
@@ -623,6 +720,12 @@ object SetTheoryDSL {
       classRef.classRelations("memberInterfaces").asInstanceOf[mutable.Map[String, InterfaceStruct]].put(intName, innerInterface)
   }
 
+  /**
+   * This method resolves the interface members
+   * @param setExp - SetExpression type for member expression
+   * @param interfaceRef - Interface Object
+   * @return - resolved value of expression as per matching
+   */
   private def resolveInterfaceMembers(setExp: SetExpression, interfaceRef: InterfaceStruct): Any = setExp match {
 
     case SetExpression.Implements(sIntExp*) =>
@@ -776,6 +879,10 @@ object SetTheoryDSL {
      */
     case ClassDef(className: String, classExpArgs: SetExpression*)
 
+    /**
+     * AbstractClassDef Expression
+     * Defines an abstract class with a class name and set of expression which are part of class's body or can be thought of as class members
+     */
     case AbstractClassDef(className: String, classExpArgs: SetExpression*)
 
     /**
@@ -796,14 +903,34 @@ object SetTheoryDSL {
      */
     case ClassRefFromClass(className: String, classRef: SetExpression)
 
+    /**
+     * ClassRefFromInterface Expression
+     * Refer to a class which is declared as an inner class of the InterfaceRef interface reference
+     */
     case ClassRefFromInterface(className: String, intRef: SetExpression)
 
+    /**
+     * InterfaceRef Expression
+     * Refer to a interface from name
+     */
     case InterfaceRef(intName: String)
 
+    /**
+     * InterfaceRefFromClass Expression
+     * Refer to a interface from a class whose member interface it is
+     */
     case InterfaceRefFromClass(intName: String, classRef: SetExpression)
 
+    /**
+     * InterfaceRefFromInterface Expression
+     * Refer to a interface from another interface whose member interface it is
+     */
     case InterfaceRefFromInterface(intName: String, intRef: SetExpression)
 
+    /**
+     * InterfaceRefFromObject Expression
+     * Refer to a interface from object whose parent class's member interface it is
+     */
     case InterfaceRefFromObject(intName: String, objRef: SetExpression)
 
     /**
@@ -903,18 +1030,46 @@ object SetTheoryDSL {
      */
     case ObjectInstanceOf(objectRef: SetExpression, classRef: SetExpression)
 
+    /**
+     * Extends Expression
+     * extends a super class
+     */
     case Extends(superClassRef: SetExpression)
 
+    /**
+     * Implements Expression
+     * Implements one or more interfaces
+     */
     case Implements(interfaceRefs: SetExpression*)
 
+    /**
+     * InterfaceDef Expression
+     * Defining an interface
+     */
     case InterfaceDef(intName: String, interfaceExpArgs: SetExpression*)
 
+    /**
+     * PublicAccess Expression
+     * Represents Public Access Modifier
+     */
     case PublicAccess()
 
+    /**
+     * ProtectedAccess Expression
+     * Represents Protected Access Modifier
+     */
     case ProtectedAccess()
 
+    /**
+     * PrivateAccess Expression
+     * Represents Private Access Modifier
+     */
     case PrivateAccess()
 
+    /**
+     * DefAccess Expression
+     * Represents Default Access Modifier
+     */
     case DefAccess()
 
     /** This method evaluates SetExpressions
@@ -1044,6 +1199,7 @@ object SetTheoryDSL {
         else
           outerClassRef.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]](cName)
 
+      // Returns a class reference from an interface
       case ClassRefFromInterface(cName, intRef) =>
         val outerInterfaceRef = intRef.eval.asInstanceOf[InterfaceStruct]
         if outerInterfaceRef.interfaceRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].get(cName).isEmpty then
@@ -1051,6 +1207,7 @@ object SetTheoryDSL {
         else
           outerInterfaceRef.interfaceRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]](cName)
 
+      // Interface reference using name
       case InterfaceRef(intName) =>
         val intRef = getInterfaceRef(intName, currentEnvironment(index))
         if intRef == null then
@@ -1058,6 +1215,7 @@ object SetTheoryDSL {
         else
           intRef
 
+      // Interface reference from class as member interfaces
       case InterfaceRefFromClass(intName, classRef) =>
         val outerClassRef = classRef.eval.asInstanceOf[ClassStruct]
         if outerClassRef.classRelations("memberInterfaces").asInstanceOf[mutable.Map[String, InterfaceStruct]].get(intName).isEmpty then
@@ -1065,6 +1223,7 @@ object SetTheoryDSL {
         else
           outerClassRef.classRelations("memberInterfaces").asInstanceOf[mutable.Map[String, InterfaceStruct]](intName)
 
+      // Interface reference from interface as member interfaces
       case InterfaceRefFromInterface(intName, intRef) =>
         val outerInterfaceRef = intRef.eval.asInstanceOf[InterfaceStruct]
         if outerInterfaceRef.interfaceRelations("memberInterfaces").asInstanceOf[mutable.Map[String, InterfaceStruct]].get(intName).isEmpty then
@@ -1072,6 +1231,7 @@ object SetTheoryDSL {
         else
           outerInterfaceRef.interfaceRelations("memberInterfaces").asInstanceOf[mutable.Map[String, InterfaceStruct]](intName)
 
+      // Interface reference from object as member interfaces of instantiating class
       case InterfaceRefFromObject(intName, objRef) =>
         val objectToRef = objRef.eval.asInstanceOf[ObjectStruct]
         objectToRef.getInnerInterface(intName)
@@ -1085,6 +1245,7 @@ object SetTheoryDSL {
         else
           throw new Exception(cName + " class already exists.")
 
+      // Abstract method definition
       case AbstractClassDef(cName, clsExpArgs*) =>
         val clsRef = getClassRef(cName, currentEnvironment(index))
         if clsRef == null then
@@ -1093,6 +1254,7 @@ object SetTheoryDSL {
         else
           throw new Exception(cName + " class already exists.")
 
+      // Interface Definition
       case InterfaceDef(intName, expArgs*) =>
         val intRef = getInterfaceRef(intName, currentEnvironment(index))
         if intRef == null then
@@ -1152,12 +1314,16 @@ object SetTheoryDSL {
       // ObjectInstanceOf Expression - returns a Boolean which represents whether the object is an instantiation of a particular class or not
       case ObjectInstanceOf(objRef, clsRef) => objRef.eval.asInstanceOf[ObjectStruct].isInstanceOf(clsRef.eval.asInstanceOf[ClassStruct])
 
+      // Public Access Modifier
       case PublicAccess() => AccessProperties.Public
 
+      // Private Access Modifier
       case PrivateAccess() => AccessProperties.Private
 
+      // Protected Access Modifier
       case ProtectedAccess() => AccessProperties.Protected
 
+      // Default Access Modifier
       case DefAccess() => AccessProperties.DefaultAccess
     }
 
@@ -1166,85 +1332,6 @@ object SetTheoryDSL {
    */
   @main def runSetTheoryDSL(): Unit = {
     println("Program runs successfully")
-
-    import SetExpression.*
-
-    InterfaceDef(
-      "I1",
-      CreatePublicField("f1"),
-      Method(
-        "m1",
-        PublicAccess(),
-        ParamsExp(Param("a"), Param("b"))
-      ),
-      Method(
-        "m2",
-        PublicAccess(),
-        ParamsExp(),
-      )
-    ).eval
-
-    InterfaceDef(
-      "I4",
-      Extends(InterfaceRef("I1")),
-      Method(
-        "m3",
-        PrivateAccess(),
-        ParamsExp()
-      )
-    ).eval
-
-    InterfaceDef(
-      "I5",
-      Extends(InterfaceRef("I1")),
-      Method(
-        "m5",
-        ProtectedAccess(),
-        ParamsExp(Param("x"))
-      )
-    ).eval
-
-    AbstractClassDef(
-      "c1",
-      Implements(InterfaceRef("I4")),
-      Constructor(
-        ParamsExp()
-      )
-    ).eval
-
-    ClassDef(
-      "c2",
-      Extends(ClassRef("c1")),
-      Implements(InterfaceRef("I5"), InterfaceRef("I1")),
-      Constructor(
-        ParamsExp(),
-        SetField("f1", Value(20))
-      ),
-      Method(
-        "m1",
-        PublicAccess(),
-        ParamsExp(Param("a"), Param("b")),
-        SetIdentifier( Variable("a"), Variable("b") )
-      ),
-      Method(
-        "m2",
-        PublicAccess(),
-        ParamsExp(),
-        SetIdentifier( Field("f1") )
-      ),
-      Method(
-        "m5",
-        ProtectedAccess(),
-        ParamsExp(Param("x")),
-        Assign("y", Value("hello")),
-        SetIdentifier( Variable("x"), Variable("y") )
-      )
-
-    ).eval
-
-    Assign("object4", NewObject( ClassRef("c2") ) ).eval
-    Assign("rt", InvokeMethodOfObject("m2", Variable("object4")) ).eval
-    println( Variable("rt").eval)
   }
 
 }
