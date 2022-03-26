@@ -1,13 +1,13 @@
 # Rajat Kumar (UIN: 653922910)
 
-## CS474 Homework 2 - Submission
+## CS474 Homework 3 - Submission
 
 ### Set Theory DSL - SetPlayground
 
 ---
 
 ### Introduction
-Set Theory DSL is a Domain Specific Language created to create classes, objects and perform simple operations on Sets. It is build on top of Scala 3. Set operations like Union, Intersection, Set Difference, Symmetric Set Difference and Cartesian are implemented with the help of expression. Other operations like Inserting and deleting items are also implemented. Language specific operations like assigning the values to variables, fetching those variables, macros and their evaluation and scopes (both named and anonymous scopes) are also implemented. Classes, Object are also allowed to create. Classes can inherit other classes and single class inheritance is supported. There is also the support of Nested Classes. Operations on Sets can be performed with the help of this DSLs' capabilities to enable object-oriented programming. Other important features like Dynamic Dispatch and access modifiers are also supported.
+Set Theory DSL is a Domain Specific Language created to create classes, objects and perform simple operations on Sets. It is build on top of Scala 3. Set operations like Union, Intersection, Set Difference, Symmetric Set Difference and Cartesian are implemented with the help of expression. Other operations like Inserting and deleting items are also implemented. Language specific operations like assigning the values to variables, fetching those variables, macros and their evaluation and scopes (both named and anonymous scopes) are also implemented. Classes, Object are also allowed to create. Classes can inherit other classes and single class inheritance is supported. There are interfaces and abstract classes also. There is also the support of Nested Classes. Operations on Sets can be performed with the help of this DSLs' capabilities to enable object-oriented programming. Other important features like Dynamic Dispatch and access modifiers are also supported.
 
 ---
 
@@ -15,7 +15,7 @@ Set Theory DSL is a Domain Specific Language created to create classes, objects 
 
 1. Install [IntelliJ](https://www.jetbrains.com/student/) (this link is for student edition, you can download other as well).
 2. Use [gitHub](https://github.com/RJonMshka/CS474Homework1.git) repo for this project and clone it into your machine using git bash on Windows and terminal on MacOS.
-3. Switch to the `homework2` branch if the default branch is something else.
+3. Switch to the `homework3` branch if the default branch is something else.
 4. Open IntelliJ and go to `File > New > Project from existing Source`, or `File > New > Project from version control`. For the second option, you have to directly provide git repo link and no need to clone the git repo separately.
 5. Make sure you have Java JDK and scala installed on your system. Java JDK between versions 8 and 17 are required to run this project.
 6. We are using Scala version `3.1.1`. Please go to its [docs](https://docs.scala-lang.org/scala3/) for better understanding. You can download Scala 3 from [here](https://www.scala-lang.org/download/).
@@ -28,7 +28,7 @@ Set Theory DSL is a Domain Specific Language created to create classes, objects 
 13. The `build.sbt` is responsible for building your project.
 14. In IntelliJ, go to `Build > Build Project` to build the project.
 15. Once build is finished, you are ready to run the project.
-16. There are two test files `src/test/scala/SetTheoryDSLTest.scala` and `src/test/scala/ClassesAndInheritanceDSLTest.scala`. The first one is concerned with testing Set Operations of DSLs' SetExpressions and second one is focused towards testing the object-oriented features of this DSL.
+16. There are three test files `src/test/scala/SetTheoryDSLTest.scala`, `src/test/scala/ClassesAndInheritanceDSLTest.scala`, and `src/test/scala/InterfaceAndAbstractClassDSLTest.scala`. The first one is concerned with testing Set Operations of DSLs' SetExpressions, the second one is focused towards testing the object-oriented features like Classes, Objects and inheritance of this DSL and lastly, the third test file tests the features of interfaces and abstract classes with their complex compositions.
 17. You can add your own test cases in these files to test the project better.
 18. To run test cases directly from terminal, enter the command `sbt compile test` or `sbt clean compile test`.
 19. To run the main file `SetTheoryDSLTest.scala`, enter the command `sbt compile run` or `sbt clean compile run` in the terminal.
@@ -40,6 +40,7 @@ Set Theory DSL is a Domain Specific Language created to create classes, objects 
 ### Implementation
 The implementation of Set Theory DSL is done with the help of `Enumeration` or [enums](https://docs.scala-lang.org/scala3/reference/enums/enums.html) construct. Enum types are used as Set Expressions (or Instructions) for the DSL. `Mutable Maps` are used to store variables. The `Scope` class is the implementation of named and anonymous scopes whose instances hold a name, a pointer to the parent scope, their bindings or reference environment and a `Mutable Map` which holds the reference to its child scopes.
 The support of Object-Oriented Programming (OOP) behavior is also implemented. Various `SetExpression`s are added as compared to the homework1 (branch `master`). `ClassStruct`, `MethodStruct`, `ObjectStruct` and some other constructs are used to create support for Classes, Objects, Fields, Methods and specifically dynamic dispatch and inheritance.
+Interface, Abstract Class declaration and their composition to create sophisticated hierarchical structures are also featured as part of homework 3 (branch `homework3`).
 A deep down implementation, syntax and semantics is covered in the next section.
 
 ---
@@ -47,7 +48,7 @@ A deep down implementation, syntax and semantics is covered in the next section.
 ## Set Operation Syntax and Semantics
 
 ### Common Language Syntax
-All of the expression are of type `SetExpression`.
+All expressions are of type `SetExpression`.
 Each expression or instruction need to be evaluated for its working. Which means that you have to write `.eval` at the end of the outermost expression.
 
 For example, the below code declares a variable with name `var1` and assign it a value of `1` (which is the evaluated value of `Value(3)` expression itself). Since, `Value(1)` is also an expression, but you do not need to call `eval` on it separately. You just have to call `eval` on the outermost expression which is `Assign` in this case.
@@ -172,7 +173,7 @@ NamedScope("scope1",
 
 ### UnnamedScope(scopeExpArgs: SetExpression*)
 The `UnnamedScope` expression is similar to `NamedScope` expression above. However, there are few differences. It does not have a name. We only specify the SetExpression(s) to execute in that scope. Also, since, it does not have a name, it will not be accessible to its parent once it is closed. If any named or Unnamed scopes are created inside it, they will also not be accessing if this scope closes.
-Its similar to NamedScope in the sense that they share almost the same syntax except name as the first argument.
+It's similar to NamedScope in the sense that they share almost the same syntax except name as the first argument.
 
 Example:
 ```
@@ -203,7 +204,7 @@ UnnamedScope(
 ```
 
 ### SetIdentifier(setExpArgs: SetExpression*): collection.mutable.Set[Any]
-The `SetIdentifier` returns a mutable Set of Any data-type. The syntax is pretty simple, we can pass zero or more `SetExpression`s to it and it will evaluate all of them and place them in a mutable Set.
+The `SetIdentifier` returns a mutable Set of Any data-type. The syntax is pretty simple, we can pass zero or more `SetExpression`s to it, and it will evaluate all of them and place them in a mutable Set.
 To store this Set, we can use the `Assign` expression.
 
 Syntax/Example:
@@ -252,7 +253,7 @@ Variable("sym_diff_set").eval      // returns Set(1, 3)
 ```
 
 ### CartesianProduct(s1: SetExpression, s2: SetExpression): collection.mutable.Set[Any]
-The `CartesianProduct` expression takes exactly two arguments like `Union`, both of type `SetExpression`. They both must evaluate to a Set of type `mutable.Set[Any]`. This expression performs the Cartesian product operation of two sets and return another set with elements in the form (a, b), where a is every element of first set and b is every element of second set.
+The `CartesianProduct` expression takes exactly two arguments like `Union`, both of type `SetExpression`. They both must evaluate to a Set of type `mutable.Set[Any]`. This expression performs the Cartesian product operation of two sets and return another set with elements in the form (a, b), where `a` is every element of first set and b is every element of second set.
 
 Syntax/Example:
 ```
@@ -261,7 +262,7 @@ Variable("cp_set").eval      // returns Set( (1, 3), (1, 4), (2, 3), (2, 4) )
 ```
 
 ### InsertInto(setExp: SetExpression, setExpArgs: SetExpression*): collection.mutable.Set[Any]
-The `InsertInto` expression take the first argument as a `SetExpression` which must resolve or evaluate to a `mutable Set`. The other argument(s) are also `SetExpression` type but they can be more than one. These `SetExpression`s are evaluated to their respective values and are then inserted into the Set evaluated from the first argument.
+The `InsertInto` expression take the first argument as a `SetExpression` which must resolve or evaluate to a `mutable Set`. The other argument(s) are also `SetExpression` type, but they can be more than one. These `SetExpression`s are evaluated to their respective values and are then inserted into the Set evaluated from the first argument.
 
 Syntax/Example:
 ```
@@ -273,7 +274,7 @@ Variable("set1").eval                                                    // Woul
 ```
 
 ### DeleteFrom(setExp: SetExpression, setExpArgs: SetExpression*)
-The `DeleteFrom` expression deletes one or many values from a Set. The first argument is a `SetExpression` which should resolve to a `mutable.Set[Any]` and other arguments are also of type `SetExpression` which are the values that need to be removed from the Set. Multiple values can be remove with one expression.
+The `DeleteFrom` expression deletes one or many values from a Set. The first argument is a `SetExpression` which should resolve to a `mutable.Set[Any]` and other arguments are also of type `SetExpression` which are the values that need to be removed from the Set. Multiple values can be removed with one expression.
 
 Syntax/Code Example:
 ```
@@ -334,22 +335,25 @@ ClassDef(
         SetField("f1", Variable("a") ),
         SetField("f2", Variable("b") ),
     ),
-    PublicMethod(                                           // defining a public method
+    Method(                                           // defining a public method
         "m2",
+        PublicAccess(),
         ParamsExp(),
         Field("f2")
     )
 ).eval
 ```
 
-### ClassDefThatExtends(cName: String, superClass: SetExpression, classExpArgs: SetExpression*)
-The `ClassDefThatExtends` expression is used to create or define new classes similar to `ClassDef`. However, with this, you will have the ability to create a class by inheriting some other class. `className` represents the name of the class which will be stored in the binding environment. In the correct referencing environment, use can reference this class again with this `className`. And `superClass` will be the reference to the class which this class is going to inherit. `classExpArgs` are a Sequence of SetExpression representing Class members like Fields, Methods, Constructor, etc.
+### ClassDef(className: String, classExpArgs: SetExpression*) [with `Extends` functionality]
+### Extends(classRef: SetExpression)
+The `ClassDef` can be used to inherit another class with just specifying one `Extends` expression with the above signature in the body of the class. This expression can only appear once and can only take one class reference as argument.
+This means that a class can only inherit a single class.
 
 Syntax/Code Example:
 ```
-ClassDefThatExtends(
+ClassDef(
     "ClassTwo",
-    ClassRef("ClassOne"),                               // Parent class's reference
+    Extends(ClassRef("ClassOne")),                               // Parent class's reference
     CreatePublicField("f1"),                             // Field creation
     CreateProtectedField("f2"),
     Constructor(                                          // defining Constructor                  
@@ -357,8 +361,9 @@ ClassDefThatExtends(
         SetField("f1", Variable("a") ),                     // setting the value for fields
         SetField("f2", Variable("b") ),
     ),
-    PublicMethod(                                           // defining a public method
+    Method(                                           // defining a public method
         "m2",
+        PublicAccess(),
         ParamsExp(),
         Field("f2")
     )
@@ -375,9 +380,9 @@ ClassRef("ClassOne").eval
 
 Usage: For example in class creation
 ```
-ClassDefThatExtends(
+ClassDef(
     "ClassTwo",
-    ClassRef("ClassOne"),                               // ClassRef is used to pass reference of parent class to create sub class
+    Extends(ClassRef("ClassOne")),                               // ClassRef is used to pass reference of extend expression to create sub class
     CreatePublicField("f1"),                             // Field creation
     CreateProtectedField("f2"),
     Constructor(                                          // defining Constructor                  
@@ -385,8 +390,9 @@ ClassDefThatExtends(
         SetField("f1", Variable("a") ),                     // setting the value for fields
         SetField("f2", Variable("b") ),
     ),
-    PublicMethod(                                           // defining a public method
+    Method(                                           // defining a public method
         "m2",
+        PublicAccess(),
         ParamsExp(),
         Field("f2")
     )
@@ -486,8 +492,9 @@ ClassDef(
         ParamsExp( Param("v1")), 
         SetField("f1", Variable("v1")) 
     ),
-    PublicMethod(
+    Method(
         "m1",
+        PublicAccess(),
         ParamsExp(),
         Field("f1")                       // Public method m1 will return value of Field f1 once invoked
     )
@@ -555,7 +562,7 @@ ClassDef(
 ```
 
 ### CreatePrivateField(fieldName: String)
-`CreatePrivateField` is similar to `CreateField` and is used to create a field for class. This field has private access which means that it cannot be accessed outside directly and will not be inherited by any sub-class.
+`CreatePrivateField` is similar to `CreateField` and is used to create a field for class. This field has private access which means that it cannot be accessed outside directly and will not be inherited by any subclass.
 
 Usage:
 ```
@@ -569,9 +576,9 @@ ClassDef(
 ).eval
 ```
 
-### Method(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
-`Method` Expression is used to create a method with name `methodName` for the class. `argExp` is the set of params that this method needs to be invoked and `mBodyExpArgs` are the expression of its body or we can say that they are instructions of the method.
-`Method` creates a method with default access modifier which means that it cannot be accessed/invoked outside class's body directly and will not be inherited by any sub-class.
+### Method(methodName: String, accessProp: AccessProperties, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+`Method` Expression is used to create a method with name `methodName` for the class. `argExp` is the set of params that this method needs to be invoked and `mBodyExpArgs` are the expression of its body, or we can say that they are instructions of the method.
+`Method` creates a method with default access modifier which means that it cannot be accessed/invoked outside class's body directly and will not be inherited by any subclass.
 The last expression of method body will specify its return type.
 
 Usage:
@@ -584,7 +591,8 @@ ClassDef(
         SetField("f1", Variable("v1"))
     ),
     Method(
-       "m1",                                                        // method name "m1"
+    "m1",                                                            // method name "m1"
+       DefaultAccess(),                                              // default access modifier   
        ParamsExp( Param("x")),                                      // param signature for method
        SetField("f1", Variable("x")),                               // start of method body
        Field("f1")                                              // end of method body - last expression, so this method return value of field "f1"
@@ -592,9 +600,10 @@ ClassDef(
 ).eval
 ```
 
-### PublicMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
-`PublicMethod` Expression is similar to `Method`.
-`PublicMethod` creates a method with public access modifier which means that it can be accessed/invoked outside class's body directly and can be inherited by any sub-class.
+### PublicMethod Syntax
+### Method(methodName: String, accessProp: AccessProperties, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+A Public access level can be created with `Method` expression by adding a `PublicAccess()` expression as its second argument.
+This creates a method with public access modifier which means that it can be accessed/invoked outside class's body directly and can be inherited by any subclass.
 The last expression of method body will specify its return type.
 
 Usage:
@@ -606,8 +615,9 @@ ClassDef(
         ParamsExp( Param("v1")), 
         SetField("f1", Variable("v1"))
     ),
-    PublicMethod(
+    Method(
        "m1",                                                        // method name "m1"
+       PublicAccess(),                                              // Public Access Modifier
        ParamsExp( Param("x")),                                      // param signature for method
        SetField("f1", Variable("x")),                               // start of method body
        Field("f1")                                              // end of method body - last expression, so this method return value of field "f1"
@@ -615,9 +625,10 @@ ClassDef(
 ).eval
 ```
 
-### ProtectedMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
-`ProtectedMethod` Expression is similar to `Method`.
-`ProtectedMethod` creates a method with protected access modifier which means that it cannot be accessed/invoked outside class's body directly but can be inherited by any sub-class.
+### ProtectedMethod Syntax
+### Method(methodName: String, accessProp: AccessProperties, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+A Protected access level can be created with `Method` expression by adding a `ProtectedAccess()` expression as its second argument.
+This creates a method with protected access modifier which means that it cannot be accessed/invoked outside class's body directly but can be inherited by any subclass.
 The last expression of method body will specify its return type.
 
 Usage:
@@ -631,6 +642,7 @@ ClassDef(
     ),
     ProtectedMethod(
        "m1",                                                        // method name "m1"
+       ProtectedAccess(),                                              // Protected Access Modifier
        ParamsExp( Param("x")),                                      // param signature for method
        SetField("f1", Variable("x")),                               // start of method body
        Field("f1")                                              // end of method body - last expression, so this method return value of field "f1"
@@ -638,9 +650,10 @@ ClassDef(
 ).eval
 ```
 
-### PrivateMethod(methodName: String, argExp: SetExpression, mBodyExpArgs: SetExpression*)
-PrivateMethod` Expression is similar to `Method`.
-`PrivateMethod` creates a method with private access modifier which means that it cannot be accessed/invoked outside class's body directly and also cannot be inherited by any sub-class.
+### PrivateMethod Syntax
+### Method(methodName: String, accessProp: AccessProperties, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+A Private access level can be created with `Method` expression by adding a `PrivateAccess()` expression as its second argument.
+This creates a method with private access modifier which means that it cannot be accessed/invoked outside class's body directly and also cannot be inherited by any subclass.
 The last expression of method body will specify its return type.
 
 Usage:
@@ -654,6 +667,32 @@ ClassDef(
     ),
     PrivateMethod(
        "m1",                                                        // method name "m1"
+       PrivateAccess(),                                              // Private Access Modifier
+       ParamsExp( Param("x")),                                      // param signature for method
+       SetField("f1", Variable("x")),                               // start of method body
+       Field("f1")                                              // end of method body - last expression, so this method return value of field "f1"
+    )
+).eval
+```
+
+### Default Access Method Syntax
+### Method(methodName: String, accessProp: AccessProperties, argExp: SetExpression, mBodyExpArgs: SetExpression*)
+A Default access level can be created with `Method` expression by adding a `DefaultAccess()` expression as its second argument.
+This creates a method with private access modifier which means that it cannot be accessed/invoked outside class's body directly and also cannot be inherited by any subclass.
+The last expression of method body will specify its return type.
+
+Usage:
+```
+ClassDef(
+    "Class1",                      
+    CreatePrivateField("f1"),         
+    Constructor(
+        ParamsExp( Param("v1")), 
+        SetField("f1", Variable("v1"))
+    ),
+    PrivateMethod(
+       "m1",                                                        // method name "m1"
+       DefaultAccess(),                                              // Default Access Modifier
        ParamsExp( Param("x")),                                      // param signature for method
        SetField("f1", Variable("x")),                               // start of method body
        Field("f1")                                              // end of method body - last expression, so this method return value of field "f1"
@@ -662,7 +701,7 @@ ClassDef(
 ```
 
 ### NewObject(classRef: SetExpression, constructorArgs: SetExpression*): ObjectStruct
-`NewObject` Expression is used to create new DSL objects out of a class. `classRef` evaluates to a ClassStruct reference. `constructorArgs` is a sequence of Expressions that will get passed as argument to class's constructor. Any mismatch in size passed and size expected would result in an `Exception`.
+`NewObject` Expression is used to create new DSL objects out of a class. `classRef` evaluates to a ClassStruct reference. `constructorArgs` is a sequence of Expressions that will be passed as argument to class's constructor. Any mismatch in size passed and size expected would result in an `Exception`.
 
 Syntax and Example:
 ```
@@ -777,6 +816,7 @@ ClassDef(
     ),
     Method(
         "m1",
+        PublicAccess(), 
         ParamsExp(Param("a")),
         Union( SetIdentifier(Value(10), Value(30)), SetIdentifier(Variable("a")) )
     )
@@ -796,8 +836,9 @@ ClassDef(
         ParamsExp(),
         SetField("f1", Value("field_value"))
     ),
-    PublicMethod(
+    Method(
         "m1",
+        PublicAccess(), 
         ParamsExp(Param("a")),
         Union( SetIdentifier(Value(10), Value(30)), SetIdentifier(Variable("a")) )
     )
@@ -820,8 +861,9 @@ ClassDef(
         ParamsExp(),
         SetField("f1", Value("field_value"))
     ),
-    PublicMethod(
+    Method(
         "m1",
+        PublicAccess(), 
         ParamsExp(Param("a")),
         Union( SetIdentifier(Value(10), Value(30)), SetIdentifier(Variable("a")) )
     )
@@ -833,6 +875,333 @@ ObjectInstanceOf( Variable("obj1"), ClassRef("Class1") ).eval      // return tru
 
 ObjectInstanceOf( Variable("obj1"), ClassRef("ClassX") ).eval       // return false - given ClassX class was already declared
 ```
+
+### ClassRefFromInterface(className: String, intRef: SetExpression)
+`ClassRefFromInterface` is used to refer to an inner class of the outer interface.
+Usage:
+Usage - Creating object from inner class of an interface:
+```
+InterfaceDef(
+    "OuterInterface",                      // normal interface creation
+    CreatePublicField("f1"),
+    ClassDef(                          // creating an inner class named "InnerClass"
+        "InnerClass",
+        CreatePublicField("f2"),
+        Constructor(
+            ParamsExp(),
+            SetField("f2", Value("inner_field_value"))
+        )
+    )
+).eval
+// we will use the above object to create an object of "InnerClass" using "ClassRefFromInterface" Expression
+
+Assign("obj1", NewObject( ClassRefFromInterface( "InnerClass", InterfaceRef("OuterInterface") ) )).eval      // object of InnerClass
+```
+
+### InterfaceDef(intName: String, interfaceExpArgs: SetExpression*)
+`InterfaceDef` expression is used to create or define an interface. The syntax is such that the first argument is the name of the interface, other arguments will be the expression(s) representing body of the interface.
+An interface can have all access level fields same as classes. It can extend a single interface and cannot implement other interface.
+It can have all access level method with addition of `abstract` and default level implementation methods.
+An `abstract` does not have any implementation. There is no specific keyword to represent an abstract method.
+It can be viewed as a method expression with `no` body expression arguments.
+
+For an interface, the method that contains a body, is a `default` implementation level method. That method has some default implementation and is not considered a fully concrete method.
+
+Only methods with `public` and `protected` access can be inherited by sub-interfaces and subclasses.
+
+An interface can be implemented by many classes and a single class can implement many interfaces.
+
+Usage and Example:
+```
+InterfaceDef(
+    "OuterInterface",                      // normal interface creation
+    CreatePublicField("f1")
+).eval
+```
+
+With default method:
+```
+InterfaceDef(
+    "OuterInterface",                      // normal interface creation
+    CreatePublicField("f1"),
+    Method(
+        "m1",                   // a default method
+        PublicAccess(), 
+        ParamsExp(Param("a")),
+        Variable("a")
+    )
+).eval
+```
+
+With abstract method:
+```
+InterfaceDef(
+    "OuterInterface",                      // normal interface creation
+    CreatePublicField("f1"),
+    Method(
+        "m1",                   // an abstract method
+        PublicAccess(), 
+        ParamsExp(Param("a"))
+).eval
+```
+
+### Extends(superInterfaceRef: SetExpression)
+One interface can extend or inherit other interface by adding single `Extends` expression in its body and passing a reference to another Interface object which will be the parent of current interface being declared.
+
+It will inherit Public, Protected fields and methods from superinterfaces (go up the parent hierarchy).
+
+Usage:
+```
+InterfaceDef(
+    "I1",                      // normal interface creation
+    Extends(InterfaceRef("I2")),   // extends another interface with name I2
+    CreatePublicField("f1"),
+    Method(
+        "m1",                   // an abstract method
+        PublicAccess(), 
+        ParamsExp(Param("a"))
+).eval
+```
+
+### AbstractClassDef(className: String, classExpArgs: SetExpression*)
+An `AbstractClassDef` expression is used to create an abstract class which will have abstract (without implementation) methods.
+
+There should be at least one abstract method belonging to the abstract class, otherwise an Exception will be thrown.
+
+An abstract class can extend other concrete or abstract classes and can even implement interfaces. However, after inheriting and implementing, there should be at least one abstract method left that belong to the abstract class.
+
+Usage and Example:
+```
+AbstractClassDef(                                   // abstract class definition
+    classOneName,
+    Implements(InterfaceRef(interfaceTwoName)),    // can implement interface
+    Constructor(
+        ParamsExp()
+    ),
+    Method(                             // a public method with no implementation
+        "m1",
+        PublicAccess(),
+        ParamsExp()
+    )
+).eval
+```
+
+### Implements(interfaceRefs: SetExpression*)
+The `Implements` expression is used by a class (concrete or abstract, applies to both) to implement multiple interfaces.
+These interfaces will serve as superinterfaces for the class.
+
+If the class implementing interfaces is abstract then it need not provide implementation for all the abstract methods of interfaces.
+
+However, if the class implementing interfaces is concrete then it must or its super classes must implement methods of interfaces.
+
+The way `Extends` and `Implements` work is that first the control goes to the top most parent class. There it determines `default`, `abstract` and `implemented` inheritable (public and protected) methods.
+
+Then is finds all the inherited superinterfaces. If an interface appears again in the chain which has already been inherited, it is discarded as all its methods are already captured.
+
+Then abstract methods of class and interfaces are merged to form total abstract class.
+
+Similar approach is used for `Default` method but without any intervention from classes as classes cannot create default methods. That is solely interface's feature.
+
+All these methods are backed down till the current class which is formed by implementing other interfaces and extending other class.
+
+Usage:
+```
+ClassDef(                             
+    classOneName,
+    Implements(InterfaceRef(interfaceTwoName)),    // implementing an interface
+    Constructor(
+        ParamsExp()
+    ),
+    Method(                             // a public method (concrete)
+        "m1",
+        PublicAccess(),
+        ParamsExp(),
+        Value(20)
+    )
+).eval
+
+ClassDef(                             
+    classOneName,
+    Implements(InterfaceRef("I1"), InterfaceRef("I2")),    // implementing multiple interfaces interface
+    Constructor(
+        ParamsExp()
+    ),
+    Method(                             // a public method (concrete)
+        "m1",
+        PublicAccess(),
+        ParamsExp(),
+        Value(20)
+    )
+).eval
+```
+
+
+### InterfaceRef(intName: String)
+`InterfaceRef` is used to refer to an interface object with the passed name. If the interface does not exist, it searches the scope's hierarchy until it finds one or throws an error of not found type.
+
+Usage:
+```
+ClassDef(                             
+    classOneName,
+    Implements(InterfaceRef(interfaceTwoName)),    // InterfaceRef used to refer to another interface for implementation
+    Constructor(
+        ParamsExp()
+    ),
+    Method(                             // a public method (concrete)
+        "m1",
+        PublicAccess(),
+        ParamsExp(),
+        Value(20)
+    )
+).eval
+```
+
+
+### InterfaceRefFromClass(intName: String, classRef: SetExpression)
+`InterfaceRefFromClass` expression is used to refer to an interface from a class reference whose member interface it is.
+
+Usage:
+```
+
+ClassDef(
+    "c1",
+    InterfaceDef(                           // interface declaration as a member of class
+        "I1",
+        CreatePublicField("f2")
+    )
+
+).eval
+ClassDef(                             
+    classOneName,
+    Implements( InterfaceRefFromClass("I1", ClassRef("c1") )),    // InterfaceRefFromClass used to refer to another interface which is a member of a known class
+    Constructor(
+        ParamsExp()
+    ),
+    Method(                             // a public method (concrete)
+        "m1",
+        PublicAccess(),
+        ParamsExp(),
+        Value(20)
+    )
+).eval
+```
+
+### InterfaceRefFromInterface(intName: String, intRef: SetExpression)
+`InterfaceRefFromInterface` expression is used to refer to an interface from another interface as a member interface.
+
+Usage:
+```
+
+InterfaceDef(
+    "I1",
+    InterfaceDef(                           // interface declaration as a member of another interface
+        "I2",
+        CreatePublicField("f2")
+    )
+
+).eval
+ClassDef(                             
+    classOneName,
+    Implements( InterfaceRefFromInterface("I2", InterfaceRef("I1") )),    // InterfaceRefFromInterface used to refer to another interface which is a member of a known interface
+    Constructor(
+        ParamsExp()
+    ),
+    Method(                             // a public method (concrete)
+        "m1",
+        PublicAccess(),
+        ParamsExp(),
+        Value(20)
+    )
+).eval
+```
+
+
+### InterfaceRefFromObject(intName: String, objRef: SetExpression)
+`InterfaceRefFromObject` expression is used to refer to an interface from an object whose class's member interfaces have that interface in them.
+
+Usage:
+```
+
+ClassDef(                                   // class declaration
+    "c1",
+    Constructor(
+        ParamsExp()
+    ),
+    InterfaceDef(                           // interface declaration as a member of another class
+        "I2",
+        CreatePublicField("f2")
+    )
+
+).eval
+
+Assign("obj1", NewObject( ClassRef("c1") ))
+ClassDef(                             
+    classOneName,
+    Implements( InterfaceRefFromObject("I2", Variable("obj1") )),    // InterfaceRefFromObject used to refer to another interface from an object
+    Constructor(
+        ParamsExp()
+    ),
+    Method(                             // a public method (concrete)
+        "m1",
+        PublicAccess(),
+        ParamsExp(),
+        Value(20)
+    )
+).eval
+```
+
+## Questions to Answer as part of Homework 3:
+
+### Can a class/interface inherit from itself?
+`
+Answer: No, it cannot. The syntax for Implementation and Inheritance is such that the call for inheriting or implementing is done at the time when the class is not yet available in binding environment.
+Since, there is no binding of class or interface available, it cannot finds itself for inheriting or implementing.
+`
+
+### Can an interface inherit from an abstract class with all pure methods?
+`
+Answer: No, it cannot. It is because Class and Interface are totally different constructs in this DSL and cannot be substituted easily.
+`
+
+### Can an interface implement another interface?
+`
+Answer: No. An interface can only `Extend` another interface (single one).
+Only classes can implment interfaces.
+`
+
+### Can a class implement two or more different interfaces that declare methods with exactly the same signatures?
+`
+Answer: Yes, it can. It starts by selecting the left most super interface. Extract all its methods, and then moves to another and if same signature is detected or found, it is ignored.
+`
+
+### Can an abstract class inherit from another abstract class and implement interfaces where all interfaces and the abstract class have methods with the same signatures?
+`
+Answer: Yes. An abstract class can inherit from another abstract class. The logic of above question applies, there will not be any ambiguous reference, methods with same signature is considered as a single method.
+`
+
+### Can an abstract class implement interfaces?
+`
+Answer: Yes it can. However, after implementing (and many be extending some class), it should have at least one abstract method in its hierarchy which is not implemented by any subclass.
+`
+
+### Can a class implement two or more interfaces that have methods whose signatures differ only in return types?
+`
+Answer: The return type is not part of signature in this DSL, so those methods will be indistinguishable in terms of signature and can be treated as one.
+`
+
+### Can an abstract class inherit from a concrete class?
+`
+Answer: Yes. But it have to have at least one abstract class in its hierarchy or an Exception is thrown.
+`
+
+### Can an abstract class/interface be instantiated as anonymous concrete classes?
+`
+Answer: No, they cannot be. There is no way to instantiate an interface in this DSL. And abstract classes will throw an Exception upon instantitation.
+`
+
+
+
+
 
 Those are all the Data-types and expressions of DSL Set Theory as of now.
 More exciting stuff coming soon.
