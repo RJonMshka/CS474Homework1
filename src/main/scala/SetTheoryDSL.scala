@@ -1,6 +1,6 @@
 /** Important imports */
 import SetTheoryDSL.ImplProperties.Implemented
-import SetTheoryDSL.InterfaceStruct
+import SetTheoryDSL.{InterfaceStruct, SetExpression}
 import SetTheoryDSL.SetExpression.{AbstractClassDef, ClassDef, ClassRefFromInterface, Constructor, CreatePublicField, InterfaceRef, ParamsExp, SetField, Value}
 
 import collection.mutable
@@ -140,6 +140,7 @@ object SetTheoryDSL {
 
     def addSuperInterface(sInterface: InterfaceStruct): Unit =
       if classRelations("superInterfaces").asInstanceOf[mutable.Set[InterfaceStruct]].contains(sInterface) then throw new Exception("Same Interface cannot be implemented more than once in a single declaration")
+      classRelations("superInterfaces").asInstanceOf[mutable.Set[InterfaceStruct]].add(sInterface)
 
     def addClassMethod(m: MethodStruct): Unit =
       // Exception handling while adding methods
@@ -159,7 +160,7 @@ object SetTheoryDSL {
 
     private def processSuperInterface(sInterface: InterfaceStruct): Unit =
       // go to the top most interface
-      if(sInterface.interfaceRelations("superInterface") != null ||
+      if(sInterface.interfaceRelations("superInterface") != null &&
         !classRelations("inheritedInterfaces").asInstanceOf[mutable.Set[InterfaceStruct]].contains(sInterface)) then
         processSuperInterface(sInterface.interfaceRelations("superInterface").asInstanceOf[InterfaceStruct])
 
@@ -220,31 +221,6 @@ object SetTheoryDSL {
 
     def isConcrete(): Boolean =
       if(abstractMethods.isEmpty) then true else false
-
-    def containsMethodWithName(mName: String): Boolean =
-      val methodsWithName = classMethods.filter(method => method.methodName == mName)
-      if(methodsWithName.size > 1) then throw new Exception(mName + ": Access to this method is ambiguous")
-      methodsWithName.size == 1
-
-    def getMethodWithName(mName: String): MethodStruct =
-      val methodsWithName = classMethods.filter(method => method.methodName == mName)
-      methodsWithName.head
-
-    def isMethodPublic(mName: String): Boolean =
-      val method = getMethodWithName(mName)
-      method.methodAccess == AccessProperties.Public
-
-    def isMethodPrivate(mName: String): Boolean =
-      val method = getMethodWithName(mName)
-      method.methodAccess == AccessProperties.Private
-
-    def isMethodProtected(mName: String): Boolean =
-      val method = getMethodWithName(mName)
-      method.methodAccess == AccessProperties.Protected
-
-    def isMethodDefault(mName: String): Boolean =
-      val method = getMethodWithName(mName)
-      method.methodAccess == AccessProperties.DefaultAccess
   }
 
   /**
@@ -461,9 +437,15 @@ object SetTheoryDSL {
      */
     def getInnerClass(cName: String): ClassStruct =
       if !objectClass.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].contains(cName) then
-        throw new Error("nested class not found")
+        throw new Exception("nested class not found")
       else
         objectClass.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]](cName)
+
+    def getInnerInterface(intName: String): InterfaceStruct =
+      if !objectClass.classRelations("memberInterfaces").asInstanceOf[mutable.Map[String, InterfaceStruct]].contains(intName) then
+        throw new Exception("nested interface not found")
+      else
+        objectClass.classRelations("memberInterfaces").asInstanceOf[mutable.Map[String, InterfaceStruct]](intName)
 
     /**
      * Return a Boolean representing the object is an instance of a particular class
@@ -472,6 +454,8 @@ object SetTheoryDSL {
      */
     def isInstanceOf(cRef: ClassStruct): Boolean =
       cRef == objectClass
+
+
   }
 
 
@@ -820,6 +804,8 @@ object SetTheoryDSL {
 
     case InterfaceRefFromInterface(intName: String, intRef: SetExpression)
 
+    case InterfaceRefFromObject(intName: String, objRef: SetExpression)
+
     /**
      * Param Expression
      * Represent single param for building methods and constructors
@@ -1086,6 +1072,10 @@ object SetTheoryDSL {
         else
           outerInterfaceRef.interfaceRelations("memberInterfaces").asInstanceOf[mutable.Map[String, InterfaceStruct]](intName)
 
+      case InterfaceRefFromObject(intName, objRef) =>
+        val objectToRef = objRef.eval.asInstanceOf[ObjectStruct]
+        objectToRef.getInnerInterface(intName)
+
       // Class definition - check if class not declared already
       case ClassDef(cName, clsExpArgs*) =>
         val clsRef = getClassRef(cName, currentEnvironment(index))
@@ -1186,14 +1176,75 @@ object SetTheoryDSL {
         "m1",
         PublicAccess(),
         ParamsExp(Param("a"), Param("b"))
+      ),
+      Method(
+        "m2",
+        PublicAccess(),
+        ParamsExp(),
       )
     ).eval
 
     InterfaceDef(
       "I4",
       Extends(InterfaceRef("I1")),
-      Extends(InterfaceRef("I1"))
+      Method(
+        "m3",
+        PrivateAccess(),
+        ParamsExp()
+      )
     ).eval
+
+    InterfaceDef(
+      "I5",
+      Extends(InterfaceRef("I1")),
+      Method(
+        "m5",
+        ProtectedAccess(),
+        ParamsExp(Param("x"))
+      )
+    ).eval
+
+    AbstractClassDef(
+      "c1",
+      Implements(InterfaceRef("I4")),
+      Constructor(
+        ParamsExp()
+      )
+    ).eval
+
+    ClassDef(
+      "c2",
+      Extends(ClassRef("c1")),
+      Implements(InterfaceRef("I5"), InterfaceRef("I1")),
+      Constructor(
+        ParamsExp(),
+        SetField("f1", Value(20))
+      ),
+      Method(
+        "m1",
+        PublicAccess(),
+        ParamsExp(Param("a"), Param("b")),
+        SetIdentifier( Variable("a"), Variable("b") )
+      ),
+      Method(
+        "m2",
+        PublicAccess(),
+        ParamsExp(),
+        SetIdentifier( Field("f1") )
+      ),
+      Method(
+        "m5",
+        ProtectedAccess(),
+        ParamsExp(Param("x")),
+        Assign("y", Value("hello")),
+        SetIdentifier( Variable("x"), Variable("y") )
+      )
+
+    ).eval
+
+    Assign("object4", NewObject( ClassRef("c2") ) ).eval
+    Assign("rt", InvokeMethodOfObject("m2", Variable("object4")) ).eval
+    println( Variable("rt").eval)
   }
 
 }
