@@ -1,11 +1,11 @@
 /** Important imports */
 import SetTheoryDSL.ImplProperties.Implemented
 import SetTheoryDSL.{InterfaceStruct, SetExpression}
-import SetTheoryDSL.SetExpression.{AbstractClassDef, ClassDef, ClassRefFromInterface, Constructor, CreatePublicField, InterfaceRef, ParamsExp, SetField, Value}
+import SetTheoryDSL.SetExpression.{AbstractClassDef, ClassDef, ClassRefFromInterface, Constructor, CreatePublicField, InterfaceRef, NewObject, ParamsExp, SetField, Value}
+import com.sun.corba.se.impl.naming.cosnaming.InternalBindingValue
 
 import collection.mutable
 import scala.annotation.tailrec
-import scala.language.postfixOps
 
 /** Factory for [[SetTheoryDSL]] instances. */
 object SetTheoryDSL {
@@ -37,11 +37,13 @@ object SetTheoryDSL {
   /**
    * Creating private variables, a way to maintain pointer to current referencing environment
    */
-  private val currentEnvironment: Array[Scope] = new Array[Scope](1)
+  private val currentEnvironment: mutable.Map[String, Any] = mutable.Map()
   private val index = 0
   private val globalScopeName = "globalScope"
   // Creating a global scope whose parent is null
-  currentEnvironment(index) = new Scope("globalScope", null)
+  currentEnvironment.put("scope", new Scope("globalScope", null))
+  // add the mechanism to add exception which is going to propagate through the scope chain
+  currentEnvironment.put("propagatingException", null)
 
 
   /** A Scope which is used to create a binding environment
@@ -50,7 +52,7 @@ object SetTheoryDSL {
    * @param name   the scope's name
    * @param parent a pointer to the scope's parent scope
    */
-  private class Scope(name: String, parent: Scope) {
+  private class Scope(name: String, parent: Scope, val tryObject: TryStruct = null) {
     val scopeName: String = name
     val scopeParent: Scope = parent
     // This field holds the child Scope in a HashMap of particular Scope Object
@@ -60,6 +62,41 @@ object SetTheoryDSL {
     val classes: mutable.Map[String, ClassStruct] = mutable.Map()
     val interfaces: mutable.Map[String, InterfaceStruct] = mutable.Map()
   }
+
+  private class TryStruct(val catchExpSeq: Seq[SetExpression.Catch])
+
+  private def createNewScope(scope: Scope): Unit =
+    currentEnvironment.put("scope", scope)
+
+  private def getCurrentScope(): Scope =
+    currentEnvironment("scope").asInstanceOf[Scope]
+
+  private def addBindingToScope(bindingName: String, bindingValue: Any): Unit =
+    currentEnvironment("scope").asInstanceOf[Scope].bindingEnvironment.put(bindingName, bindingValue)
+
+  private def getBindingFromScope(bindingName: String): Any =
+    currentEnvironment("scope").asInstanceOf[Scope].bindingEnvironment(bindingName)
+
+  private def addMapToScope(map: mutMapAny): Unit =
+    currentEnvironment("scope").asInstanceOf[Scope].bindingEnvironment ++= map
+
+  private def switchToParentScope(): Unit =
+    currentEnvironment.put("scope", currentEnvironment("scope").asInstanceOf[Scope].scopeParent)
+
+  private def getParentScope(): Scope =
+    currentEnvironment("scope").asInstanceOf[Scope].scopeParent
+
+  private def removeBindingByKey(keyName: String): Unit =
+    currentEnvironment("scope").asInstanceOf[Scope].bindingEnvironment -= keyName
+
+  private def addExceptionToScope(exception: ObjectStruct): Unit =
+    currentEnvironment.put("propagatingException", exception)
+
+  private def removeExceptionFromScope(): Unit =
+    currentEnvironment.put("propagatingException", null)
+
+  private def getPropagatingException(): ObjectStruct =
+    currentEnvironment("propagatingException").asInstanceOf[ObjectStruct]
 
   /**
    * Data Structure for storing interfaces
@@ -304,13 +341,13 @@ object SetTheoryDSL {
 
       // creating a constructor scope
       // switching the current environment to the new scope
-      currentEnvironment(index) = new Scope(null, currentEnvironment(index))
+      createNewScope(new Scope(null, getCurrentScope()))
 
       // adding this ref to scope
-      currentEnvironment(index).bindingEnvironment.put("this", this)
+      addBindingToScope("this", this)
 
       // adding params map to current referencing env
-      currentEnvironment(index).bindingEnvironment ++= paramsMap
+      addMapToScope(paramsMap)
       // Evaluating every expression in that constructor - this might have changed value of some of the fields
       classRef.classConstructor("constructor").methodBody.foreach(_.eval)
 
@@ -324,7 +361,7 @@ object SetTheoryDSL {
 
 
       // once done executing - no need to remove the params from currentEnv
-      currentEnvironment(index) = currentEnvironment(index).scopeParent
+      switchToParentScope()
       // clearing the fieldMap - only inheritedMap needs to be retained
 
     /**
@@ -359,13 +396,13 @@ object SetTheoryDSL {
       else
         for i <- methodParamNames.indices do paramsMap += (methodParamNames(i).asInstanceOf[String] -> methodParamValues(i))
 
-      currentEnvironment(index) = new Scope(null, currentEnvironment(index))
+      createNewScope(new Scope(null, getCurrentScope()))
 
       // adding object ref to scope
-      currentEnvironment(index).bindingEnvironment.put("this", this)
+      addBindingToScope("this", this)
 
       // adding params map to current referencing env
-      currentEnvironment(index).bindingEnvironment ++= paramsMap
+      addMapToScope(paramsMap)
       // Evaluating every expression in that constructor
       val lastCallReturn: mutable.Map[String, Any] = mutable.Map()
       for expIndex <- methodToCall.methodBody.indices do
@@ -375,9 +412,9 @@ object SetTheoryDSL {
         if expIndex == methodToCall.methodBody.size - 1 then
           lastCallReturn.put("return", evaluatedExp)
       // remove the scope of this
-      currentEnvironment(index).bindingEnvironment -= "this"
+      removeBindingByKey("this")
       // once done executing
-      currentEnvironment(index) = currentEnvironment(index).scopeParent
+      switchToParentScope()
       // return the value
       lastCallReturn("return")
 
@@ -459,9 +496,9 @@ object SetTheoryDSL {
      * @return
      */
     def isInstanceOf(cRef: ClassStruct): Boolean =
-      cRef == objectClass
-
-
+      if cRef != objectClass then
+        if cRef != null then isInstanceOf(cRef.classRelations("superClass").asInstanceOf[ClassStruct]) else false
+      else true
   }
 
 
@@ -707,6 +744,13 @@ object SetTheoryDSL {
       val innerClass = declareClass(cName, clsExpArgs, false)
       classRef.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].put(cName, innerClass)
 
+    // ClassDef Expression
+    case SetExpression.ExceptionClassDef(cName, clsExpArgs*) =>
+      if classRef.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].contains(cName) then
+        throw new Exception(cName + ": exception class already exists")
+      val innerClass = declareClass(cName, clsExpArgs, false)
+      classRef.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].put(cName, innerClass)
+
     case SetExpression.AbstractClassDef(cName, clsExpArgs*) =>
       if classRef.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].contains(cName) then
         throw new Exception(cName + ": class already exists")
@@ -888,6 +932,8 @@ object SetTheoryDSL {
      * Defines an abstract class with a class name and set of expression which are part of class's body or can be thought of as class members
      */
     case AbstractClassDef(className: String, classExpArgs: SetExpression*)
+
+    case ExceptionClassDef(className: String, classExpArgs: SetExpression*)
 
     /**
      * ClassRef Expression
@@ -1076,6 +1122,25 @@ object SetTheoryDSL {
      */
     case DefAccess()
 
+    // control structures
+    case If(ConditionExp: SetExpression, thenClause: SetExpression)
+
+    case Check(exp: SetExpression)
+
+    case IfElse(ConditionExp: SetExpression, thenClause: SetExpression.Then, elseClause: SetExpression.Else)
+
+    case Then(expSeq: SetExpression*)
+
+    case Else(expSeq: SetExpression*)
+
+    case Try(expSeq: SetExpression*)
+
+    case Catch(eName: String, eType: SetExpression, catchExpSeq: SetExpression*)
+
+    case TryCatch(tryExp: SetExpression.Try, catchExpSeq: SetExpression.Catch*)
+
+    case ThrowNewException(exceptionRef: SetExpression, exceptionCause: SetExpression*)
+
     /** This method evaluates SetExpressions
      * Description - The body of this method is the implementation of above abstract data types
      *
@@ -1086,12 +1151,12 @@ object SetTheoryDSL {
       case Value(v) => v
 
       // Variable Expression Implementation
-      case Variable(varName) => getVariable(varName, currentEnvironment(index))
+      case Variable(varName) => getVariable(varName, getCurrentScope())
 
       // Assign Expression Implementation
       case Assign(varName, exp) =>
         val evaluatedExp = exp.eval
-        currentEnvironment(index).bindingEnvironment.put(varName, evaluatedExp)
+        addBindingToScope(varName, evaluatedExp)
         evaluatedExp
 
       // Macro Expression Implementation
@@ -1103,37 +1168,23 @@ object SetTheoryDSL {
       // NamedScope Expression Implementation
       case NamedScope(scopeName: String, expArgs*) =>
         //check whether there are no child scope or if there are child scopes then check if the specified scope name is not a part of child scope
-        if currentEnvironment(0).childScopes.isEmpty || !currentEnvironment(0).childScopes.contains(scopeName) then
+        if getCurrentScope().childScopes.isEmpty || !getCurrentScope().childScopes.contains(scopeName) then
           // opening a new scope block
-          val newScope: Scope = new Scope(scopeName, currentEnvironment(0))
+          val newScope: Scope = new Scope(scopeName, getCurrentScope())
           // adding the new scope's reference to current scope's children
-          currentEnvironment(0).childScopes += (scopeName -> newScope)
-          // switching the current environment to the new scope
-          currentEnvironment(0) = newScope
-          // evaluating each expression passed to the scope
-          expArgs.foreach(_.eval)
-          // closing the scope, switching back to the scope's parent
-          currentEnvironment(0) = newScope.scopeParent
+          getCurrentScope().childScopes += (scopeName -> newScope)
+
+          processScope(newScope,{}, expArgs)
         else
           // find the nested scope in children map if already there
-          val nestedScope: Scope = currentEnvironment(0).childScopes(scopeName)
-          // switching the current environment to the existing nested scope
-          currentEnvironment(0) = nestedScope
-          // evaluating each expression passed to the scope
-          expArgs.foreach(_.eval)
-          // closing the scope, switching back to the scope's parent
-          currentEnvironment(0) = nestedScope.scopeParent
+          val nestedScope: Scope = getCurrentScope().childScopes(scopeName)
+          processScope(nestedScope, {}, expArgs)
 
       // UnnamedScope Expression Implementation
       case UnnamedScope(expArgs*) =>
         // Create a new scope as anonymous scopes can't be referred again
-        val newScope: Scope = new Scope(null, currentEnvironment(0))
-        // switching the current environment to the new scope
-        currentEnvironment(0) = newScope
-        // evaluating each expression passed to the scope
-        expArgs.foreach(_.eval)
-        // closing the scope, switching back to the scope's parent
-        currentEnvironment(0) = newScope.scopeParent
+        val newScope: Scope = new Scope(null, getCurrentScope())
+        processScope(newScope, {}, expArgs)
 
       // SetIdentifier Expression Implementation
       case SetIdentifier(setExpArgs*) =>
@@ -1184,7 +1235,7 @@ object SetTheoryDSL {
 
       // Returns a reference to the class in current scope
       case ClassRef(cName) =>
-        val clsRef = getClassRef(cName, currentEnvironment(index))
+        val clsRef = getClassRef(cName, getCurrentScope())
         if clsRef == null then
           throw new Exception(cName + " class does not exists.")
         else
@@ -1213,7 +1264,7 @@ object SetTheoryDSL {
 
       // Interface reference using name
       case InterfaceRef(intName) =>
-        val intRef = getInterfaceRef(intName, currentEnvironment(index))
+        val intRef = getInterfaceRef(intName, getCurrentScope())
         if intRef == null then
           throw new Exception(intName + " interface does not exists.")
         else
@@ -1242,30 +1293,38 @@ object SetTheoryDSL {
 
       // Class definition - check if class not declared already
       case ClassDef(cName, clsExpArgs*) =>
-        val clsRef = getClassRef(cName, currentEnvironment(index))
+        val clsRef = getClassRef(cName, getCurrentScope())
         if clsRef == null then
           val newClass = declareClass(cName, clsExpArgs, false)
-          currentEnvironment(0).classes.put(cName, newClass)
+          getCurrentScope().classes.put(cName, newClass)
         else
           throw new Exception(cName + " class already exists.")
 
       // Abstract method definition
       case AbstractClassDef(cName, clsExpArgs*) =>
-        val clsRef = getClassRef(cName, currentEnvironment(index))
+        val clsRef = getClassRef(cName, getCurrentScope())
         if clsRef == null then
           val newClass = declareClass(cName, clsExpArgs, true)
-          currentEnvironment(0).classes.put(cName, newClass)
+          getCurrentScope().classes.put(cName, newClass)
         else
           throw new Exception(cName + " class already exists.")
 
       // Interface Definition
       case InterfaceDef(intName, expArgs*) =>
-        val intRef = getInterfaceRef(intName, currentEnvironment(index))
+        val intRef = getInterfaceRef(intName, getCurrentScope())
         if intRef == null then
           val newInterface = declareInterface(intName, expArgs)
-          currentEnvironment(0).interfaces.put(intName, newInterface)
+          getCurrentScope().interfaces.put(intName, newInterface)
         else
           throw new Exception(intName + " interface already exists.")
+
+      case ExceptionClassDef(cName, classExpArgs*) =>
+        val clsRef = getClassRef(cName, getCurrentScope())
+        if clsRef == null then
+          val newClass = declareClass(cName, classExpArgs, false)
+          getCurrentScope().classes.put(cName, newClass)
+        else
+          throw new Exception(cName + " exception class already exists.")
 
       // Params expression - used to specify params to methods and constructor
       case ParamsExp(pExpArgs*) =>
@@ -1284,35 +1343,36 @@ object SetTheoryDSL {
 
       // InvokeMethod Expression - used to call method from which the Class constructor and other methods
       case InvokeMethod(mName, params*) =>
-        val currentObject = currentEnvironment(index).bindingEnvironment("this")
+        val currentObject = getBindingFromScope("this")
         currentObject.asInstanceOf[ObjectStruct].invokeMethod(mName, params, false)
 
       // InvokeMethodOfObject Expression
       case InvokeMethodOfObject(mName, objectRef, params*) =>
         val currentObject = objectRef.eval
-        currentEnvironment(index).bindingEnvironment.put("this", currentObject)
+        addBindingToScope("this", currentObject)
         currentObject.asInstanceOf[ObjectStruct].invokeMethod(mName, params, true)
 
       // Field Expression - Returns single field - analogous to this.field
       case Field(fName) =>
-        val currentObject = currentEnvironment(index).bindingEnvironment("this")
+        val currentObject = getBindingFromScope("this")
         currentObject.asInstanceOf[ObjectStruct].getField(fName, false)
 
       // FieldFromObject Expression - Returns field from object, analogous to object.field
       case FieldFromObject(fName, objRef) =>
         val currentObject = objRef.eval
-        currentEnvironment(index).bindingEnvironment.put("this", currentObject)
+        addBindingToScope("this", currentObject)
         currentObject.asInstanceOf[ObjectStruct].getField(fName, true)
 
       // SetField Expression - Updates the value of the field, analogous to assigning value to this.field
       case SetField(fName, exp) =>
-        val currentObject = currentEnvironment(index).bindingEnvironment("this")
+        val currentObject = getBindingFromScope("this")
+        println(currentObject)
         currentObject.asInstanceOf[ObjectStruct].setField(fName, exp.eval, false)
 
       // SetFieldFromObject Expression - Updates the value of the field by referencing the object from outside the clas body, analogous to assigning value to object.field
       case SetFieldFromObject(fName, objRef, exp) =>
         val currentObject = objRef.eval
-        currentEnvironment(index).bindingEnvironment.put("this", currentObject)
+        addBindingToScope("this", currentObject)
         currentObject.asInstanceOf[ObjectStruct].setField(fName, exp.eval, true)
 
       // ObjectInstanceOf Expression - returns a Boolean which represents whether the object is an instantiation of a particular class or not
@@ -1329,13 +1389,145 @@ object SetTheoryDSL {
 
       // Default Access Modifier
       case DefAccess() => AccessProperties.DefaultAccess
+
+      case Check(exp) => toBoolean(exp.eval)
+
+      case If(condition, thenClause) =>
+        if(condition.eval.asInstanceOf[Boolean]) then thenClause.eval else ()
+
+      case IfElse(condition, thenClause, elseClause) =>
+        if(condition.eval.asInstanceOf[Boolean]) then thenClause.eval else elseClause.eval
+
+      case Then(thenExpSeq*) =>
+        val newScope: Scope = new Scope(null, getCurrentScope())
+        processScope(newScope, {}, thenExpSeq)
+
+      case Else(elseExpSeq*) =>
+        val newScope: Scope = new Scope(null, getCurrentScope())
+        processScope(newScope, {}, elseExpSeq)
+
+      case TryCatch(tryExp, catchExpSeq) => {
+        val tryObject = TryStruct(catchExpSeq.asInstanceOf[Seq[SetExpression.Catch]])
+        val newTryScope = Scope(null, getCurrentScope(), tryObject)
+        val evalTryExpSeq = tryExp.eval
+        processScope(newTryScope, {}, evalTryExpSeq.asInstanceOf[Seq[SetExpression]])
+      }
+
+      case Try(tryExpSeq) => tryExpSeq
+
+      case Catch(eName, eType, catchExpSeq) => Map[String, Any]("exceptionName" -> eName, "exceptionType" -> eType.eval.asInstanceOf[ClassStruct], "catchSeq" -> catchExpSeq)
+
+      case ThrowNewException(classRef, cause*) =>
+        val instanceClassRef = classRef.eval.asInstanceOf[ClassStruct]
+        if instanceClassRef.isAbstract || !instanceClassRef.isConcrete then throw new Exception("An Abstract class cannot be instantiated")
+        val newException = ObjectStruct(classRef.eval.asInstanceOf[ClassStruct], cause)
+        if(newException.getField("cause", true) != null) then
+          addExceptionToScope(newException)
+          if getParentScope() == null then globalScopeExceptionHandling
+        else throw new Exception("DSL Exception must have a 'cause' public field")
     }
+
+  private def toBoolean(value: Any): Boolean = value match {
+    case "" => false
+    case null => false
+    case false => false
+    case 0 => false
+    case _ => true
+  }
+
+  private def matchExceptionWithCatch(exception: ObjectStruct, catchExpMap: Map[String, Any]): Boolean = exception.isInstanceOf( catchExpMap("exceptionType").asInstanceOf[ClassStruct] )
+
+  private def globalScopeExceptionHandling: Unit = throw new Exception("Unhandled Exception")
+
+  private def exceptionPropagation: Unit =
+    // check for propagating exception
+    val exception = getPropagatingException()
+    if exception != null then
+      // check for a try block
+      val tryObject = getCurrentScope().tryObject
+      if tryObject != null then
+        // switch to parent scope first so that catch scopes won't come in between
+        switchToParentScope()
+        val catchExpSeq = tryObject.catchExpSeq
+        // filter with matched expressions
+        val matchedCatchExpList = catchExpSeq.filter(catchExp => {
+          val catchMap =  catchExp.eval.asInstanceOf[Map[String, Any]]
+          matchExceptionWithCatch(exception, catchMap)
+        })
+        // go with the first one
+        if matchedCatchExpList.isEmpty then
+          switchToParentScope()
+          addExceptionToScope(exception)
+          if getParentScope() == null then globalScopeExceptionHandling else ()
+        else
+          val catchExp = matchedCatchExpList.head
+          val catchMap = catchExp.eval.asInstanceOf[Map[String, Any]]
+          // current exception is handled, stop propagating
+          removeExceptionFromScope()
+          // create catch expression scope
+          val catchScope = new Scope(null, getCurrentScope())
+          // add exception to the scope for it to be handled
+          processScope(catchScope, {
+            addBindingToScope(catchMap("exceptionName").asInstanceOf[String], exception)
+          }, catchMap("catchSeq").asInstanceOf[Seq[SetExpression]])
+      else
+        switchToParentScope()
+        addExceptionToScope(exception)
+        if getParentScope() == null then globalScopeExceptionHandling else ()
+    else switchToParentScope()
+
+  private def processScope(scope: Scope, beforeEvalBlock: => Unit, expSeq: Seq[SetExpression]): Unit =
+    // switching the current environment to the new scope
+    createNewScope(scope)
+    beforeEvalBlock
+    // evaluating each expression passed to the scope
+    expSeq.foreach(exp => {
+      // only evaluate the expression if there is no exception propagating
+      if getPropagatingException() == null then exp.eval else ()
+    })
+    exceptionPropagation
 
   /**
    * Main Function, entry point to the application
    */
   @main def runSetTheoryDSL(): Unit = {
     println("Program runs successfully")
+
+    import SetExpression.*
+
+    Assign("v1", Value(20)).eval
+    Assign("set1", SetIdentifier( Value(10) )).eval
+
+    If( Check( Equals(Variable("v1"), Value(10)) ),
+      Then(
+        InsertInto( Variable("set1"), Value(50))
+      )
+    ).eval
+
+    IfElse( Check( Equals(Variable("v1"), Value(10)) ),
+      Then(
+        InsertInto( Variable("set1"), Value(50))
+      ),
+      Else(
+        InsertInto( Variable("set1"), Value(true))
+      )
+    ).eval
+
+    println( Variable("set1").eval )
+
+    ExceptionClassDef("MainException",
+      CreatePublicField("cause"),
+      Constructor(
+        ParamsExp(Param("passedCause")),
+        SetField("cause", Variable("passedCause"))
+      )
+    ).eval
+
+    ThrowNewException(ClassRef("MainException"), Value("Exception 1")).eval
+
+
+
+
   }
 
 }
