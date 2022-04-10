@@ -354,8 +354,9 @@ object SetTheoryDSL {
       // adding params map to current referencing env
       addMapToScope(paramsMap)
       // Evaluating every expression in that constructor - this might have changed value of some of the fields
-      classRef.classConstructor("constructor").methodBody.foreach(_.eval)
-
+      classRef.classConstructor("constructor").methodBody.foreach(methodExp =>
+        if getPropagatingException() == null then methodExp.eval else ()
+      )
       // updating the inherited field map and public/protected inherited set
       publicFields.foreach(key =>
         if fieldsMap.contains(key) then inheritedFieldMap.put(key, fieldsMap(key))
@@ -363,11 +364,9 @@ object SetTheoryDSL {
       protectedFields.foreach(key =>
         if fieldsMap.contains(key) then inheritedFieldMap.put(key, fieldsMap(key))
       )
-
-
       // once done executing - no need to remove the params from currentEnv
-      switchToParentScope()
-      // clearing the fieldMap - only inheritedMap needs to be retained
+      // handle exception propagation behavior
+      exceptionPropagation
 
     /**
      * Construct for invoking object's method
@@ -411,15 +410,18 @@ object SetTheoryDSL {
       // Evaluating every expression in that constructor
       val lastCallReturn: mutable.Map[String, Any] = mutable.Map()
       for expIndex <- methodToCall.methodBody.indices do
-        val evaluatedExp = methodToCall.methodBody(expIndex).eval
+        if getPropagatingException() == null then
+          val evaluatedExp = methodToCall.methodBody(expIndex).eval
+          // handle last call case
+          if expIndex == methodToCall.methodBody.size - 1 then
+            lastCallReturn.put("return", evaluatedExp)
+          else ()
+        else lastCallReturn.put("return", ())
 
-        // handle last call case
-        if expIndex == methodToCall.methodBody.size - 1 then
-          lastCallReturn.put("return", evaluatedExp)
       // remove the scope of this
       removeBindingByKey("this")
       // once done executing
-      switchToParentScope()
+      exceptionPropagation
       // return the value
       lastCallReturn("return")
 
@@ -1535,8 +1537,8 @@ object SetTheoryDSL {
         InsertInto(Variable("set13"), Value(200))
       )
     ).eval
-    
-    
+
+
   }
 
 }

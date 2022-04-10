@@ -368,6 +368,167 @@ class ControlStructuresDSLTest extends AnyFunSpec {
 
         assert(Variable("set13").eval == Set(10, 50, 200))
       }
+
+      it("should throw another exception in catch block which will be unhandled") {
+        val exceptionClassName = "Exception_13"
+        val exceptionCause = "Custom Exception Cause"
+        ExceptionClassDef(exceptionClassName,
+          CreatePublicField("cause"),
+          Constructor(
+            ParamsExp(Param("passedCause")),
+            SetField("cause", Variable("passedCause"))
+          )
+        ).eval
+
+        Assign("set14", SetIdentifier( Value(10) )).eval
+        InsertInto(Variable("set14"), Value(20)).eval
+        val thrown = the [Exception] thrownBy TryCatch(
+          Try(
+            InsertInto(Variable("set14"), Value(50)),
+            ThrowNewException(ClassRef(exceptionClassName), Value(exceptionCause)),
+            InsertInto(Variable("set14"), Value(100)),
+          ),
+          Catch("e1", ClassRef(exceptionClassName),
+            InsertInto(Variable("set14"), FieldFromObject("cause", Variable("e1"))),
+            ThrowNewException(ClassRef(exceptionClassName), Value(exceptionCause))
+          )
+        ).eval
+
+        thrown.getMessage should equal ("Unhandled Exception")
+      }
+
+      it("should throw another exception in catch block which will be handled by an outer catch block") {
+        val exceptionClassName = "Exception_14"
+        val exceptionCause1 = "Custom Exception Cause"
+        val exceptionCause2 = "Custom Outer Exception Cause"
+        ExceptionClassDef(exceptionClassName,
+          CreatePublicField("cause"),
+          Constructor(
+            ParamsExp(Param("passedCause")),
+            SetField("cause", Variable("passedCause"))
+          )
+        ).eval
+
+        Assign("set15", SetIdentifier( Value(10) )).eval
+        InsertInto(Variable("set15"), Value(20)).eval
+        TryCatch(
+          Try(
+            InsertInto(Variable("set15"), Value(50)),
+            TryCatch(
+              Try(
+                ThrowNewException(ClassRef(exceptionClassName), Value(exceptionCause1)),
+              ),
+              Catch("e1", ClassRef(exceptionClassName),
+                ThrowNewException(ClassRef(exceptionClassName), Value(exceptionCause2))
+              )
+            ),
+            InsertInto(Variable("set15"), Value(100)),
+          ),
+          Catch("e1", ClassRef(exceptionClassName),
+            InsertInto(Variable("set15"), FieldFromObject("cause", Variable("e1"))),
+          )
+        ).eval
+
+        assert(Variable("set15").eval == Set(10, 20, 50, exceptionCause2))
+      }
+
+      it("should throw an exception in constructor while declaring a class") {
+        val exceptionClassName = "Exception_15"
+        val exceptionCause = "Custom Exception Cause"
+        val className = "c1"
+
+        ExceptionClassDef(exceptionClassName,
+          CreatePublicField("cause"),
+          Constructor(
+            ParamsExp(Param("passedCause")),
+            SetField("cause", Variable("passedCause"))
+          )
+        ).eval
+
+        Assign("exceptionSet1", SetIdentifier()).eval
+
+        ClassDef(className,
+          CreatePublicField("f1"),
+          CreatePublicField("f2"),
+          Constructor(
+            ParamsExp(Param("a"), Param("b")),
+            ThrowNewException(ClassRef(exceptionClassName), Value(exceptionCause)),
+            SetField("f1", Variable("a")),
+            SetField("f2", Variable("b"))
+          )
+        ).eval
+
+        TryCatch(
+          Try(
+            Assign("obj1", NewObject(ClassRef(className), Value(1), Value(2) ))
+          ),
+          Catch("e1", ClassRef(exceptionClassName),
+            InsertInto(Variable("exceptionSet1"), FieldFromObject("cause", Variable("e1")))
+          )
+        ).eval
+
+        assert( Variable("exceptionSet1").eval == Set(exceptionCause) )
+
+      }
+
+      it("should throw an exception in one of the methods of class and capture it in a catch block") {
+        val exceptionClassName = "Exception_16"
+        val exceptionCause = "Custom Exception Cause"
+        val className = "c2"
+
+        ExceptionClassDef(exceptionClassName,
+          CreatePublicField("cause"),
+          Constructor(
+            ParamsExp(Param("passedCause")),
+            SetField("cause", Variable("passedCause"))
+          )
+        ).eval
+
+        Assign("exceptionSet2", SetIdentifier()).eval
+
+        ClassDef(className,
+          CreatePublicField("f1"),
+          CreatePublicField("f2"),
+          Constructor(
+            ParamsExp(Param("a"), Param("b")),
+            SetField("f1", Variable("a")),
+            SetField("f2", Variable("b"))
+          ),
+          Method(
+            "m1",
+            PublicAccess(),
+            ParamsExp(),
+            SetField("f1", Value(30)),
+            ThrowNewException(ClassRef(exceptionClassName), Value(exceptionCause)),
+            SetField("f2", Value(40))
+          )
+        ).eval
+
+        TryCatch(
+          Try(
+            Assign("obj1", NewObject(ClassRef(className), Value(1), Value(2) )),
+            InvokeMethodOfObject("m1", Variable("obj1"))
+          ),
+          Catch("e1", ClassRef(exceptionClassName),
+            InsertInto(Variable("exceptionSet2"), FieldFromObject("cause", Variable("e1")))
+          )
+        ).eval
+
+        assert( Variable("exceptionSet2").eval == Set(exceptionCause) )
+      }
+
+      it("should throw a Java exception if the Exception Class does not have a 'cause' public field") {
+        val exceptionClassName = "Exception_17"
+        val exceptionCause = "Custom Exception Cause"
+        ExceptionClassDef(exceptionClassName,
+          Constructor(
+            ParamsExp(Param("passedCause"))
+          )
+        ).eval
+
+        val thrown = the [Exception] thrownBy ThrowNewException(ClassRef(exceptionClassName), Value(exceptionCause)).eval
+        thrown.getMessage should equal ("No such field Exist")
+      }
     }
 
   }
