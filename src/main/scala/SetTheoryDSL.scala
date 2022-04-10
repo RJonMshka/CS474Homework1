@@ -264,6 +264,11 @@ object SetTheoryDSL {
      */
     def isConcrete: Boolean =
       if abstractMethods.isEmpty then true else false
+
+    def isParentOf(child: ClassStruct): Boolean =
+      if this != child then
+        if child.classRelations("superClass").asInstanceOf[ClassStruct] != null then this.isParentOf(child.classRelations("superClass").asInstanceOf[ClassStruct]) else false
+      else true
   }
 
   /**
@@ -496,9 +501,7 @@ object SetTheoryDSL {
      * @return
      */
     def isInstanceOf(cRef: ClassStruct): Boolean =
-      if cRef != objectClass then
-        if cRef != null then isInstanceOf(cRef.classRelations("superClass").asInstanceOf[ClassStruct]) else false
-      else true
+      cRef == objectClass || cRef.isParentOf(objectClass)
   }
 
 
@@ -1366,7 +1369,6 @@ object SetTheoryDSL {
       // SetField Expression - Updates the value of the field, analogous to assigning value to this.field
       case SetField(fName, exp) =>
         val currentObject = getBindingFromScope("this")
-        println(currentObject)
         currentObject.asInstanceOf[ObjectStruct].setField(fName, exp.eval, false)
 
       // SetFieldFromObject Expression - Updates the value of the field by referencing the object from outside the clas body, analogous to assigning value to object.field
@@ -1406,16 +1408,16 @@ object SetTheoryDSL {
         val newScope: Scope = new Scope(null, getCurrentScope())
         processScope(newScope, {}, elseExpSeq)
 
-      case TryCatch(tryExp, catchExpSeq) => {
-        val tryObject = TryStruct(catchExpSeq.asInstanceOf[Seq[SetExpression.Catch]])
+      case TryCatch(tryExp, catchExpSeq*) => {
+        val tryObject = TryStruct(catchExpSeq)
         val newTryScope = Scope(null, getCurrentScope(), tryObject)
         val evalTryExpSeq = tryExp.eval
         processScope(newTryScope, {}, evalTryExpSeq.asInstanceOf[Seq[SetExpression]])
       }
 
-      case Try(tryExpSeq) => tryExpSeq
+      case Try(tryExpSeq*) => tryExpSeq
 
-      case Catch(eName, eType, catchExpSeq) => Map[String, Any]("exceptionName" -> eName, "exceptionType" -> eType.eval.asInstanceOf[ClassStruct], "catchSeq" -> catchExpSeq)
+      case Catch(eName, eType, catchExpSeq*) => Map[String, Any]("exceptionName" -> eName, "exceptionType" -> eType.eval.asInstanceOf[ClassStruct], "catchSeq" -> catchExpSeq)
 
       case ThrowNewException(classRef, cause*) =>
         val instanceClassRef = classRef.eval.asInstanceOf[ClassStruct]
@@ -1423,7 +1425,9 @@ object SetTheoryDSL {
         val newException = ObjectStruct(classRef.eval.asInstanceOf[ClassStruct], cause)
         if(newException.getField("cause", true) != null) then
           addExceptionToScope(newException)
-          if getParentScope() == null then globalScopeExceptionHandling
+          if getParentScope() == null then
+            removeExceptionFromScope()
+            globalScopeExceptionHandling
         else throw new Exception("DSL Exception must have a 'cause' public field")
     }
 
@@ -1456,9 +1460,11 @@ object SetTheoryDSL {
         })
         // go with the first one
         if matchedCatchExpList.isEmpty then
-          switchToParentScope()
           addExceptionToScope(exception)
-          if getParentScope() == null then globalScopeExceptionHandling else ()
+          if getParentScope() == null then
+            removeExceptionFromScope()
+            globalScopeExceptionHandling
+          else ()
         else
           val catchExp = matchedCatchExpList.head
           val catchMap = catchExp.eval.asInstanceOf[Map[String, Any]]
@@ -1473,7 +1479,10 @@ object SetTheoryDSL {
       else
         switchToParentScope()
         addExceptionToScope(exception)
-        if getParentScope() == null then globalScopeExceptionHandling else ()
+        if getParentScope() == null then
+          removeExceptionFromScope()
+          globalScopeExceptionHandling
+        else ()
     else switchToParentScope()
 
   private def processScope(scope: Scope, beforeEvalBlock: => Unit, expSeq: Seq[SetExpression]): Unit =
@@ -1495,27 +1504,10 @@ object SetTheoryDSL {
 
     import SetExpression.*
 
-    Assign("v1", Value(20)).eval
-    Assign("set1", SetIdentifier( Value(10) )).eval
-
-    If( Check( Equals(Variable("v1"), Value(10)) ),
-      Then(
-        InsertInto( Variable("set1"), Value(50))
-      )
-    ).eval
-
-    IfElse( Check( Equals(Variable("v1"), Value(10)) ),
-      Then(
-        InsertInto( Variable("set1"), Value(50))
-      ),
-      Else(
-        InsertInto( Variable("set1"), Value(true))
-      )
-    ).eval
-
-    println( Variable("set1").eval )
-
-    ExceptionClassDef("MainException",
+    val exceptionClassName1 = "Exception_11"
+    val exceptionClassName2 = "Exception_12"
+    val exceptionCause = "Custom Exception Cause"
+    ExceptionClassDef(exceptionClassName1,
       CreatePublicField("cause"),
       Constructor(
         ParamsExp(Param("passedCause")),
@@ -1523,11 +1515,28 @@ object SetTheoryDSL {
       )
     ).eval
 
-    ThrowNewException(ClassRef("MainException"), Value("Exception 1")).eval
+    ExceptionClassDef(exceptionClassName2,
+      Extends(ClassRef(exceptionClassName1)),
+      Constructor(
+        ParamsExp(Param("passedCause")),
+        SetField("cause", Variable("passedCause"))
+      )
+    ).eval
 
+    Assign("set13", SetIdentifier( Value(10) )).eval
 
-
-
+    TryCatch(
+      Try(
+        InsertInto(Variable("set13"), Value(50)),
+        ThrowNewException(ClassRef(exceptionClassName2), Value(exceptionCause)),
+        InsertInto(Variable("set13"), Value(100)),
+      ),
+      Catch("e1", ClassRef(exceptionClassName1),
+        InsertInto(Variable("set13"), Value(200))
+      )
+    ).eval
+    
+    
   }
 
 }
