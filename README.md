@@ -8,7 +8,7 @@ _# Rajat Kumar (UIN: 653922910)
 
 ### Introduction
 Set Theory DSL is a Domain Specific Language created to create classes, objects and perform simple operations on Sets. It is build on top of Scala 3. Set operations like Union, Intersection, Set Difference, Symmetric Set Difference and Cartesian are implemented with the help of expression. Other operations like Inserting and deleting items are also implemented. Language specific operations like assigning the values to variables, fetching those variables, macros and their evaluation and scopes (both named and anonymous scopes) are also implemented. Classes, Object are also allowed to create. Classes can inherit other classes and single class inheritance is supported. There are interfaces and abstract classes also. There is also the support of Nested Classes. Operations on Sets can be performed with the help of this DSLs' capabilities to enable object-oriented programming. Other important features like Dynamic Dispatch and access modifiers are also supported.
-As part of homework 3, the functionality for control structures and exception handling has been introduced by adding support for If, If-Else, and Try-Catch exception handling expressions.
+As part of homework 4, the functionality for control structures and exception handling has been introduced by adding support for If, If-Else, and Try-Catch exception handling expressions.
 
 ---
 
