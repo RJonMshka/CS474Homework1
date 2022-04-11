@@ -73,7 +73,7 @@ class ClassesAndInheritanceDSLTest extends AnyFunSpec {
 
       it("Should change a public of an object") {
         SetFieldFromObject("f1", Variable("object1"), Value("abc") ).eval
-         assert( FieldFromObject("f1", Variable("object1")).eval == "abc" )
+        assert( FieldFromObject("f1", Variable("object1")).eval == "abc" )
       }
 
       it("Should invoke another one method from another one") {
@@ -228,6 +228,8 @@ class ClassesAndInheritanceDSLTest extends AnyFunSpec {
         Assign("object5", NewObject( ClassRefFromObject("InnerClass", Variable("object4") ) ) ).eval
 
         assert( FieldFromObject("f2", Variable("object5") ).eval == "inner_field_value" )
+
+        GarbageCollector.eval
       }
 
     }

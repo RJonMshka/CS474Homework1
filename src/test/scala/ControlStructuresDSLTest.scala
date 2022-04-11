@@ -20,6 +20,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         assert( Variable("set1").eval == Set(10, 50) )
+        GarbageCollector.eval
       }
 
       it("should evaluate multiple expressions passed to the then clause if condition is truthy") {
@@ -34,6 +35,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         assert( Variable("set2").eval == Set(10, 50) )
+        GarbageCollector.eval
       }
 
       it("should not evaluate the then clause if condition is false") {
@@ -47,6 +49,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         assert( Variable("set3").eval == Set(10) )
+        GarbageCollector.eval
       }
     }
 
@@ -65,6 +68,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         assert( Variable("set4").eval == Set(10, 50) )
+        GarbageCollector.eval
       }
 
       it("should evaluate multiple expressions in the then clause of IfElse Expression if condition evaluated is truthy") {
@@ -82,6 +86,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         assert( Variable("set5").eval == Set(10, true) )
+        GarbageCollector.eval
       }
 
       it("should evaluate else clause and ignore then clause of IfElse Expression if condition evaluated is false") {
@@ -98,6 +103,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         assert( Variable("set6").eval == Set(10, 20) )
+        GarbageCollector.eval
       }
 
       it("should evaluate multiple expressions in the else clause of IfElse Expression if condition evaluated is false") {
@@ -115,6 +121,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         assert( Variable("set7").eval == Set(10, true) )
+        GarbageCollector.eval
       }
     }
 
@@ -132,6 +139,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
 
         val thrown = the [Exception] thrownBy ThrowNewException(ClassRef(exceptionClassName), Value(exceptionCause)).eval
         thrown.getMessage should equal ("Unhandled Exception")
+        GarbageCollector.eval
       }
 
       it("should create an exception class and throw an instance of that exception class in a nested named scope, which will not be handled") {
@@ -149,6 +157,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
           ThrowNewException(ClassRef(exceptionClassName), Value(exceptionCause))
         ).eval
         thrown.getMessage should equal ("Unhandled Exception")
+        GarbageCollector.eval
       }
 
       it("should create an exception class and throw an instance of that exception class in a nested unnamed scope, which will not be handled") {
@@ -166,6 +175,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
           ThrowNewException(ClassRef(exceptionClassName), Value(exceptionCause))
         ).eval
         thrown.getMessage should equal ("Unhandled Exception")
+        GarbageCollector.eval
       }
 
       it("should catch an exception and handle it in the catch block of TryCatch expression when thrown inside the try block") {
@@ -193,6 +203,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         assert(Variable("set8").eval == Set(10, 20, 50, exceptionCause))
+        GarbageCollector.eval
       }
 
       it("should ignore all the expression after an exception is thrown in the try block and move on after handling the catch block expression") {
@@ -222,6 +233,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         InsertInto(Variable("set9"), Value("after try catch block")).eval
 
         assert(Variable("set9").eval == Set(10, 20, 50, exceptionCause, "after try catch block"))
+        GarbageCollector.eval
       }
 
       it("should throw an exception deeply nested in a try block and propagate to the matching catch block") {
@@ -256,6 +268,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         assert(Variable("set10").eval == Set(10, 20, 50, 60, 70, exceptionCause))
+        GarbageCollector.eval
       }
 
       it("should not handle an exception when the thrown exception is different from the one whose signature is mentioned in catch block") {
@@ -292,6 +305,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         thrown.getMessage should equal ("Unhandled Exception")
+        GarbageCollector.eval
       }
 
       it("should take advantage of multiple catch blocks in TryCatch expression and handle exception later in the chain") {
@@ -331,6 +345,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         assert(Variable("set12").eval == Set(10, 50, 200))
+        GarbageCollector.eval
       }
 
       it("should take advantage of dynamic dispatch and inheritance and catch an exception of sub class type in catch block looking for exception with the parent type") {
@@ -367,6 +382,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         assert(Variable("set13").eval == Set(10, 50, 200))
+        GarbageCollector.eval
       }
 
       it("should throw another exception in catch block which will be unhandled") {
@@ -395,6 +411,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         thrown.getMessage should equal ("Unhandled Exception")
+        GarbageCollector.eval
       }
 
       it("should throw another exception in catch block which will be handled by an outer catch block") {
@@ -430,6 +447,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         assert(Variable("set15").eval == Set(10, 20, 50, exceptionCause2))
+        GarbageCollector.eval
       }
 
       it("should throw an exception in constructor while declaring a class") {
@@ -468,6 +486,7 @@ class ControlStructuresDSLTest extends AnyFunSpec {
         ).eval
 
         assert( Variable("exceptionSet1").eval == Set(exceptionCause) )
+        GarbageCollector.eval
 
       }
 

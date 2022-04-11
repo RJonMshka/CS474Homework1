@@ -32,6 +32,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
           )
         ).eval
         thrown.getMessage should equal ("An interface cannot implement another interface")
+        GarbageCollector.eval
       }
 
       it("should throw an Exception if an attempt to declare an interface with the name of an existing interface in the same scope") {
@@ -43,6 +44,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
           interfaceName
         ).eval
         thrown.getMessage should equal ("I3 interface already exists.")
+        GarbageCollector.eval
       }
 
       it("should throw an Exception if one interface extends an another interface and tries to create a method with same name which is already declared in super interface") {
@@ -67,6 +69,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
           )
         ).eval
         thrown.getMessage should equal ("Method with same name (signature) already exists in the hierarchy")
+        GarbageCollector.eval
       }
 
       it("should throw an Exception if 'Extends' expression is present more than once in interface body") {
@@ -81,6 +84,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
           Extends(InterfaceRef(interfaceNameOne))
         ).eval
         thrown.getMessage should equal ("An Interface can extend only a single Interface")
+        GarbageCollector.eval
       }
     }
 
@@ -102,6 +106,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
           Implements(InterfaceRef(interfaceName))
         ).eval
         thrown.getMessage should equal ("Non-concrete classes (classes with abstract method) should be declared abstract")
+        GarbageCollector.eval
       }
 
       it("should throw an Exception if an abstract class is declared without any abstract method") {
@@ -110,6 +115,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
           className
         ).eval
         thrown.getMessage should equal ("Concrete classes cannot be declared abstract")
+        GarbageCollector.eval
       }
 
       it("should throw an Exception if 'Implements' expression comes more than once in a class declaration") {
@@ -129,6 +135,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
           Implements(InterfaceRef(interfaceName))
         ).eval
         thrown.getMessage should equal ("Implement expression can only be used once")
+        GarbageCollector.eval
       }
 
       it("should throw an Exception if same interface is implemented more than once in one expression") {
@@ -147,6 +154,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
           Implements(InterfaceRef(interfaceName), InterfaceRef(interfaceName))
         ).eval
         thrown.getMessage should equal ("Same Interface cannot be implemented more than once in a single declaration")
+        GarbageCollector.eval
       }
 
       it("should throw an Exception if non-abstract class declares an abstract method") {
@@ -160,6 +168,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
           )
         ).eval
         thrown.getMessage should equal ("A concrete class cannot have abstract methods")
+        GarbageCollector.eval
       }
 
       it("should implement an interface and provide behavior for the abstract method") {
@@ -193,6 +202,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
         Assign("set1", InvokeMethodOfObject("m1", Variable("object1"), Value(1), Value(5)) ).eval
 
         assert( Variable("set1").eval == Set(1, 5, 50) )
+        GarbageCollector.eval
       }
 
       it("should invoke a default method of an interface") {
@@ -221,6 +231,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
         Assign("set2", InvokeMethodOfObject("m1", Variable("object2"), Value(1), Value(1)) ).eval
 
         assert( Variable("set2").eval == Set(1) )
+        GarbageCollector.eval
       }
 
       it("should invoke a default method from an abstract method of an interface which is implemented by the class") {
@@ -265,6 +276,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
         Assign("object3", NewObject( ClassRef(className) ) ).eval
         Assign("set3", InvokeMethodOfObject("m2", Variable("object3") ) ).eval
         assert( Variable("set3").eval == Set("100", 60, 50) )
+        GarbageCollector.eval
       }
 
       it("should undergo class and interface composition, where a field of interface are inherited by an abstract class and then by concrete class, also implmenting the super interfaces") {
@@ -351,6 +363,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
         Assign("set4", InvokeMethodOfObject("m2", Variable("object4")) ).eval
 
         assert( Variable("set4").eval == Set(20) )
+        GarbageCollector.eval
       }
 
       it("should throw an Exception if any interface tries to extend itself") {
@@ -361,6 +374,8 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
             Extends(InterfaceRef(interfaceName))
           ).eval
         }
+
+        GarbageCollector.eval
       }
 
       it("should throw an Exception if any abstract class tries to extend itself") {
@@ -371,6 +386,8 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
             Extends(ClassRef(className))
           ).eval
         }
+
+        GarbageCollector.eval
       }
 
       it("should throw an Exception if any concrete class tries to extend itself") {
@@ -381,6 +398,8 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
             Extends(ClassRef(className))
           ).eval
         }
+
+        GarbageCollector.eval
       }
 
       it("should not inherit any private access method of an interface") {
@@ -409,6 +428,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
 
         val thrown = the [Exception] thrownBy Assign("object5", NewObject(ClassRef(className))).eval
         thrown.getMessage should equal ("No such field Exist")
+        GarbageCollector.eval
       }
 
       it("should not inherit any default access method of an interface") {
@@ -437,6 +457,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
 
         val thrown = the [Exception] thrownBy Assign("object6", NewObject(ClassRef(className))).eval
         thrown.getMessage should equal ("No such field Exist")
+        GarbageCollector.eval
       }
 
     }
@@ -477,6 +498,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
         Assign("object7", NewObject( ClassRef(cName) ) ).eval
         Assign("set7", InvokeMethodOfObject("m2", Variable("object7") ) ).eval
         assert( Variable("set7").eval == "hello" )
+        GarbageCollector.eval
       }
 
       it("should only implement an inner interface of another class") {
@@ -516,6 +538,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
         Assign("object8", NewObject( ClassRef(cTwoName) ) ).eval
         Assign("set8", InvokeMethodOfObject("m1", Variable("object8"), Value("hello") ) ).eval
         assert( Variable("set8").eval == "hello" )
+        GarbageCollector.eval
       }
 
       it("should only implement an inner interface of another object") {
@@ -557,6 +580,7 @@ class InterfaceAndAbstractClassDSLTest extends AnyFunSpec {
         Assign("object10", NewObject( ClassRef(cTwoName) ) ).eval
         Assign("set10", InvokeMethodOfObject("m1", Variable("object10"), Value("29") ) ).eval
         assert( Variable("set10").eval == "29" )
+        GarbageCollector.eval
       }
     }
 
