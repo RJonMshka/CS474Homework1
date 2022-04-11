@@ -1,6 +1,6 @@
-# Rajat Kumar (UIN: 653922910)
+_# Rajat Kumar (UIN: 653922910)
 
-## CS474 Homework 3 - Submission
+## CS474 Homework 4 - Submission
 
 ### Set Theory DSL - SetPlayground
 
@@ -8,6 +8,7 @@
 
 ### Introduction
 Set Theory DSL is a Domain Specific Language created to create classes, objects and perform simple operations on Sets. It is build on top of Scala 3. Set operations like Union, Intersection, Set Difference, Symmetric Set Difference and Cartesian are implemented with the help of expression. Other operations like Inserting and deleting items are also implemented. Language specific operations like assigning the values to variables, fetching those variables, macros and their evaluation and scopes (both named and anonymous scopes) are also implemented. Classes, Object are also allowed to create. Classes can inherit other classes and single class inheritance is supported. There are interfaces and abstract classes also. There is also the support of Nested Classes. Operations on Sets can be performed with the help of this DSLs' capabilities to enable object-oriented programming. Other important features like Dynamic Dispatch and access modifiers are also supported.
+As part of homework 3, the functionality for control structures and exception handling has been introduced by adding support for If, If-Else, and Try-Catch exception handling expressions.
 
 ---
 
@@ -15,7 +16,7 @@ Set Theory DSL is a Domain Specific Language created to create classes, objects 
 
 1. Install [IntelliJ](https://www.jetbrains.com/student/) (this link is for student edition, you can download other as well).
 2. Use [gitHub](https://github.com/RJonMshka/CS474Homework1.git) repo for this project and clone it into your machine using git bash on Windows and terminal on MacOS.
-3. Switch to the `homework3` branch if the default branch is something else.
+3. Switch to the `homework4` branch if the default branch is something else.
 4. Open IntelliJ and go to `File > New > Project from existing Source`, or `File > New > Project from version control`. For the second option, you have to directly provide git repo link and no need to clone the git repo separately.
 5. Make sure you have Java JDK and scala installed on your system. Java JDK between versions 8 and 17 are required to run this project.
 6. We are using Scala version `3.1.1`. Please go to its [docs](https://docs.scala-lang.org/scala3/) for better understanding. You can download Scala 3 from [here](https://www.scala-lang.org/download/).
@@ -28,12 +29,12 @@ Set Theory DSL is a Domain Specific Language created to create classes, objects 
 13. The `build.sbt` is responsible for building your project.
 14. In IntelliJ, go to `Build > Build Project` to build the project.
 15. Once build is finished, you are ready to run the project.
-16. There are three test files `src/test/scala/SetTheoryDSLTest.scala`, `src/test/scala/ClassesAndInheritanceDSLTest.scala`, and `src/test/scala/InterfaceAndAbstractClassDSLTest.scala`. The first one is concerned with testing Set Operations of DSLs' SetExpressions, the second one is focused towards testing the object-oriented features like Classes, Objects and inheritance of this DSL and lastly, the third test file tests the features of interfaces and abstract classes with their complex compositions.
+16. There are four test files `src/test/scala/SetTheoryDSLTest.scala`, `src/test/scala/ClassesAndInheritanceDSLTest.scala`, `src/test/scala/InterfaceAndAbstractClassDSLTest.scala` and `src/test/scala/ControlStructuresDSLTest.scala`. The first one is concerned with testing Set Operations of DSLs' SetExpressions, the second one is focused towards testing the object-oriented features like Classes, Objects and inheritance of this DSL, the third test file tests the features of interfaces and abstract classes with their complex compositions, and lastly, the fourth one is for testing control structures and exception handling capabilities of the DSL.
 17. You can add your own test cases in these files to test the project better.
-18. To run test cases directly from terminal, enter the command `sbt compile test` or `sbt clean compile test`.
+18. To run test cases directly from terminal, enter the command `sbt compile test` or `sbt clean compile test`. Individual test suites can also be run from IntelliJ IDE.
 19. To run the main file `SetTheoryDSLTest.scala`, enter the command `sbt compile run` or `sbt clean compile run` in the terminal.
 20. The file `src/main/scala/SetTheoryDSL.scala` is the main implementation of Set Theory DSL.
-21. Please explore and have fun.
+21. Please explore, go through code, observe how these complex constructs are implemented and more importantly have fun coding and experimenting around.
 
 ---
 
@@ -41,6 +42,7 @@ Set Theory DSL is a Domain Specific Language created to create classes, objects 
 The implementation of Set Theory DSL is done with the help of `Enumeration` or [enums](https://docs.scala-lang.org/scala3/reference/enums/enums.html) construct. Enum types are used as Set Expressions (or Instructions) for the DSL. `Mutable Maps` are used to store variables. The `Scope` class is the implementation of named and anonymous scopes whose instances hold a name, a pointer to the parent scope, their bindings or reference environment and a `Mutable Map` which holds the reference to its child scopes.
 The support of Object-Oriented Programming (OOP) behavior is also implemented. Various `SetExpression`s are added as compared to the homework1 (branch `master`). `ClassStruct`, `MethodStruct`, `ObjectStruct` and some other constructs are used to create support for Classes, Objects, Fields, Methods and specifically dynamic dispatch and inheritance.
 Interface, Abstract Class declaration and their composition to create sophisticated hierarchical structures are also featured as part of homework 3 (branch `homework3`).
+As part of homework 4(branch `homework4`), control structures can be created using `If`, `IfElse` and `TryCatch` expressions. The control of evaluation changes when these expressions are introduced in the code. More details are discussed in the further sections.
 A deep down implementation, syntax and semantics is covered in the next section.
 
 ---
@@ -308,7 +310,7 @@ Equals( Variable("var1"), Variable("var2") ).eval             // returns false a
 Equals( Variable("var1), Value(20) ).eval                     //returns true as both expression evaluate to value 20
 ```
 
-## OOPS Features
+## Object-Oriented Design Features
 This DSL supports Classes, Objects and Inheritance. There are four kinds of access modifiers: `Public`, `Protected`, `Private`, and `Default` for both fields and methods. Also, there can be only constructor and only single class inheritance is supported which means that a class can be constructed with or without only one parent class. A class can have to the most one direct super class.
 
 Only `Public` and `Protected` members (both fields and methods) are inherited. `Public` members can be accessed anywhere given the reference of the object. `Protected`, `Private` and `Default` members are accessible within the body of the class.
@@ -1199,9 +1201,225 @@ Answer: Yes. But it have to have at least one abstract class in its hierarchy or
 Answer: No, they cannot be. There is no way to instantiate an interface in this DSL. And abstract classes will throw an Exception upon instantitation.
 `
 
+## Control Structures Syntax and Semantics
+___
+
+### If(ConditionExp: SetExpression, thenClause: SetExpression.Then)
+`If` expression is used as a control structure which acts as a branching structure and evaluates its `thenClause` when the evaluation of `condition` expression is a true value.
+
+Usage / Example:
+```
+If( Check( Equals(Variable("var1"), Value(20)) ),     // condition expression as first argument
+  Then(                                               
+    InsertInto( Variable("set1"), Value(50))            // body of then clause, evaluated when condition evaluates to a true value
+  )                                                  // Then expression as second argument
+).eval
+```
+
+### IfElse(ConditionExp: SetExpression, thenClause: SetExpression.Then, elseClause: SetExpression.Else)
+`IfElse` expression is used as a control structure which acts as a branching structure and evaluates its `thenClause` when the evaluation of `condition` expression is a true value, otherwise evaluates its `elseClause` expression.
+The usage is very similar to `If` expression above.
+
+Usage / Example:
+```
+IfElse( Check( Equals(Variable("var4"), Value(20)) ),  // condition expression
+  Then(
+    InsertInto( Variable("set4"), Value(50))            // then body expressions
+  ),                                                    // thenClause expression                     
+  Else(
+    InsertInto( Variable("set4"), Value(20))            // else body expressions
+  )                                                     // elseClause expression
+).eval
+```
+
+### Check(exp: SetExpression)
+`Check` expression is a complementary addition which helps to build `condition` expression for `If` and `IfElse` expressions.
+This expression take another expression and evaluates it to either a true value or a false value based on a specific DSL logic.
+
+Usage / Example:
+```
+If( Check( Equals(Variable("var1"), Value(20)) ),     // here Check expression is used for evaluating the condition for If expression
+  Then(                                               
+    InsertInto( Variable("set1"), Value(50))            
+  )                                                
+).eval
+```
+
+### Then(expSeq: SetExpression*)
+`Then` expression is used to act as a wrapper for multiple expression to executed in the `thenClause` part of `If` and `IfElse` expressions.
+
+Usage / Example:
+```
+If( Check( Equals(Variable("var1"), Value(20)) ),     
+  Then(                                               
+    InsertInto( Variable("set1"), Value(50))  
+    InsertInto( Variable("set1"), Value(20))        
+  )                                                // Then expression is used to wrap expressions for then clause
+).eval
+
+
+IfElse( Check( Equals(Variable("var4"), Value(20)) ),  
+  Then(
+    InsertInto( Variable("set4"), Value(50))            // then body expressions
+  ),                                                    // Then expression - here used with IfElse                  
+  Else(
+    InsertInto( Variable("set4"), Value(20))            
+  )                                                     
+).eval
+```
+
+### Else(expSeq: SetExpression*)
+`Else` expression is used to act as a wrapper for multiple expression to executed in the `elseClause` part of `IfElse` expression.
+
+Usage / Example:
+```
+IfElse( Check( Equals(Variable("var4"), Value(20)) ),  
+  Then(
+    InsertInto( Variable("set4"), Value(50))        
+  ),                                                                     
+  Else(
+    InsertInto( Variable("set4"), Value(20))            
+  )                                                  // Else Expression wraps elseClause expression(s)   
+).eval
+```
+
+### TryCatch(tryExp: SetExpression.Try, catchExpSeq: SetExpression.Catch*)
+`TryCatch` expression is used for writing code that can throw exception in the DSL. The code/expressions that needs to be protected are supposed to be added in this expression.
+It has two parts. the first is `Try` expression and the second is `Catch`, both of them are mentioned in detail later in the documentation 
+`TryCatch` can only have one `Try` expression (as its first argument) but it does support multiple `Catch` expressions.
+First, the `Try` expression is evaluated and its inner expressions are also evaluated until an exception is thrown.
+Once, the exception is thrown, the further evaluation stops until `Catch` expressions are encountered in the code. 
+Among multiple `Catch` expressions, the first that matches the thrown exception is evaluated and the exception is passed to it and handled accordingly.
+
+Usage/Example:
+```
+TryCatch(                                           // TryCatch Expression
+  Try(                                          
+    InsertInto(Variable("set8"), Value(50)),
+    ThrowNewException(ClassRef("c1"), Value(exceptionCause)),       // An exception is thrown
+    InsertInto(Variable("set8"), Value(100)),                       // will not be evaluated
+  ),                                                // Try Expression
+  Catch("e1", ClassRef("c1"),
+    InsertInto(Variable("set8"), FieldFromObject("cause", Variable("e1")))          // Exception handling
+  )                                                     // catch matches the exception from ClassRef
+).eval
+```
+
+### Try(expSeq: SetExpression*)
+The `Try` expression acts as a wrapper to hold the expression that need to evaluated in the try block of `TryCatch` expression.
+`expSeq` is a sequence of `SetExpression` which are evaluated until an exception is encounter like in the code snippet shown above.
+
+Usage / Example:
+```
+TryCatch(                                           // TryCatch Expression
+  Try(                                          
+    InsertInto(Variable("set8"), Value(50)),
+    ThrowNewException(ClassRef("c1"), Value(exceptionCause)),       // An exception is thrown
+    InsertInto(Variable("set8"), Value(100)),                       // will not be evaluated
+  ),                                                // Try Expression - can add or nest more expression in it
+  Catch("e1", ClassRef("c1"),
+    InsertInto(Variable("set8"), FieldFromObject("cause", Variable("e1")))          // Exception handling
+  )                                                     // catch matches the exception from ClassRef
+).eval
+```
+
+### Catch(eName: String, eType: SetExpression, catchExpSeq: SetExpression*)
+`Catch` expression is used for handling exception that are thrown anywhere inside it corresponding `Try` expression.
+If an exception is thrown in `Try` expression, like in snippet above, no further expression is evaluated until catch expressions are encountered.
+If a matching `Catch` expression is found, then it body is evaluated. 
+Before the evaluation of its body, exception is passed to its binding environment (scope) and stored with a `Variable` named `eName`.
+`eType` is for matching the type of exception with it.
+`catchExpSeq` are the sequence of `SetExpression` that constitute the body of this `Catch` expression.
+
+Usage/Example:
+```
+TryCatch(                                           // TryCatch Expression
+  Try(                                          
+    InsertInto(Variable("set8"), Value(50)),
+    ThrowNewException(ClassRef("c1"), Value(exceptionCause)),       // An exception is thrown
+    InsertInto(Variable("set8"), Value(100)),                       // will not be evaluated
+  ),                                                // Try Expression 
+  Catch("e1", ClassRef("c1"),                   // e1 is the name of variable that stores exception and ClassRef("c1") is the matching type
+    InsertInto(Variable("set8"), FieldFromObject("cause", Variable("e1")))          // Exception handling - body of Catch
+  )                                                     // Catch expression
+).eval
+
+
+// Pairing/chaining multiple catch together
+TryCatch(
+  Try(
+    InsertInto(Variable("set12"), Value(50)),
+    ThrowNewException(ClassRef(exceptionClassName1), Value(exceptionCause)),
+    InsertInto(Variable("set12"), Value(100)),
+  ),
+  Catch("e1", ClassRef(exceptionClassName2),
+    InsertInto(Variable("set12"), FieldFromObject("cause", Variable("e1")))
+),                                                                           // if this Catch is not matched, then exception is sent to be matched with next one
+  Catch("e1", ClassRef(exceptionClassName1),
+    InsertInto(Variable("set12"), Value(200))
+  )                                                                          // if this matches, the exception is handled, if not the exception further propagates to outer scopes, stopping further evalutions
+).eval
+```
+
+### ExceptionClassDef(className: String, classExpArgs: SetExpression*)
+The `ExceptionClassDef` expression is used to create an Exception class.
+The class must be a `concrete` one.
+There is a strict template that needs to be followed for it to work properly.
+It must have a public field named `cause`.
+Its value must be passed to the field by passing argument to its constructor. That is abstracted with `ThrowNewException` expression mentioned in the next section.
+
+The minimal template example is:
+```
+ExceptionClassDef("DSLException",       // Name of Exception class will be "DSLException"
+  CreatePublicField("cause"),          // This must be created
+  Constructor(                   
+    ParamsExp(Param("passedCause")),              // value for field need to be passed in constructor
+    SetField("cause", Variable("passedCause"))    // set the value of cause field
+  )
+).eval
+```
+You can add other methods, fields and event construct exception classes using class Inheritance that we have already implemented and demonstrated.
+But the above template is minimal one. The users of this language are free to create their own hierarchy of the Exceptions.
+
+
+### ThrowNewException(exceptionClassRef: SetExpression, exceptionCause: SetExpression)
+The `ThrowNewException` expression is used to throw an exception which is an instance of the class object that `exceptionClassRef` evaluates to.
+Also, there is one restriction here, the `exceptionCause` parameter must evaluate to a string. 
+This represents the Exception cause/ message which can be accessed inside the `Catch` expression by referring to the `cause` field of exception object passed to it.
+
+The propagation of the exception is already discussed above.
+If the exception is not handled and global scope is reached, a Java `Exception` is thrown to the compiler will message `Unahndled Exception`.
+
+Usage/Example:
+```
+TryCatch(
+  Try(
+    InsertInto(Variable("set12"), Value(50)),
+    ThrowNewException(ClassRef("c1"), Value("my exception cause")),     // An exception which is an instance of class object named "c1" is thrown or propagated through the scope chain with the cause of "my exception cause"
+    InsertInto(Variable("set12"), Value(100)),
+  ),
+  Catch("e1", ClassRef(exceptionClassName2),
+    InsertInto(Variable("set12"), FieldFromObject("cause", Variable("e1")))  // evaluating this expression will lead to inserting the "my exception cause" string to Set "set12"
+  )
+).eval
+```
+
+## Additional Features:
+
+### GarbageCollector
+This expression is used to reset the bindings manually. This helps in writing unit test cases so that test cases won't interfere with each other's functionalities and scopes.
+Using it often may hamper with the functionality of the DSL. 
+It is not advised to use it as a regular Set Expression. But the choice is to the user to utilize it wisely.
+
+Usage:
+```
+GarbageCollector.eval
+```
 
 
 
 
+
+___
 Those are all the Data-types and expressions of DSL Set Theory as of now.
 More exciting stuff coming soon.

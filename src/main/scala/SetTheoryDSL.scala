@@ -35,6 +35,7 @@ object SetTheoryDSL {
   private val currentEnvironment: mutable.Map[String, Any] = mutable.Map()
   private val index = 0
   private val globalScopeName = "globalScope"
+  // reset / initiate global scoping environment
   gc()
 
 
@@ -722,7 +723,7 @@ object SetTheoryDSL {
       val innerClass = declareClass(cName, clsExpArgs, false)
       classRef.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].put(cName, innerClass)
 
-    // ClassDef Expression
+    // Exception ClassDef Expression
     case SetExpression.ExceptionClassDef(cName, clsExpArgs*) =>
       if classRef.classRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].contains(cName) then
         throw new Exception(cName + ": exception class already exists")
@@ -790,6 +791,13 @@ object SetTheoryDSL {
     case SetExpression.ClassDef(cName, clsExpArgs*) =>
       if interfaceRef.interfaceRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].contains(cName) then
         throw new Exception(cName + ": class already exists")
+      val innerClass = declareClass(cName, clsExpArgs, false)
+      interfaceRef.interfaceRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].put(cName, innerClass)
+
+    // Exception ClassDef Expression
+    case SetExpression.ExceptionClassDef(cName, clsExpArgs*) =>
+      if interfaceRef.interfaceRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].contains(cName) then
+        throw new Exception(cName + ": exception class already exists")
       val innerClass = declareClass(cName, clsExpArgs, false)
       interfaceRef.interfaceRelations("memberClasses").asInstanceOf[mutable.Map[String, ClassStruct]].put(cName, innerClass)
 
@@ -990,6 +998,9 @@ object SetTheoryDSL {
     // handle exception and its propagation
     exceptionPropagation()
 
+  /**
+   * This method resets the global scope and removes all previous bindings, please use this carefully
+   */
   private def gc(): Unit =
     // Creating a global scope whose parent is null
     currentEnvironment.put("scope", new Scope("globalScope", null))
@@ -1297,7 +1308,7 @@ object SetTheoryDSL {
      * If Expression
      * A Control Structure to handle conditional evaluation
      */
-    case If(ConditionExp: SetExpression, thenClause: SetExpression)
+    case If(ConditionExp: SetExpression, thenClause: SetExpression.Then)
 
     /**
      * Check Expression
@@ -1348,6 +1359,10 @@ object SetTheoryDSL {
      */
     case ThrowNewException(exceptionClassRef: SetExpression, exceptionCause: SetExpression)
 
+    /**
+     * GarbageCollector Expression
+     * Resets the global scope
+     */
     case GarbageCollector
 
     /** This method evaluates SetExpressions

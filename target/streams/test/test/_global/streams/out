@@ -1,4 +1,4 @@
-[0m[[0m[0mdebug[0m] [0m[0mRunning TaskDef(SetTheoryDSLTest, org.scalatest.tools.Framework$$anon$1@5f495cef, false, [SuiteSelector])[0m
+[0m[[0m[0mdebug[0m] [0m[0mRunning TaskDef(SetTheoryDSLTest, org.scalatest.tools.Framework$$anon$1@68b20ffa, false, [SuiteSelector])[0m
 [0m[[0m[0minfo[0m] [0m[0m[32mSetTheoryDSLTest:[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32mSet Theory DSL - SetPlayground[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m- should create a variable an insert a value into it[0m[0m
@@ -19,7 +19,7 @@
 [0m[[0m[0minfo[0m] [0m[0m[32m- should evaluate the Set Difference of two sets[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m- should evaluate the Symmetric Difference of two sets[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m- should evaluate the Cartesian Product of two sets[0m[0m
-[0m[[0m[0mdebug[0m] [0m[0mRunning TaskDef(ClassesAndInheritanceDSLTest, org.scalatest.tools.Framework$$anon$1@5f495cef, false, [SuiteSelector])[0m
+[0m[[0m[0mdebug[0m] [0m[0mRunning TaskDef(ClassesAndInheritanceDSLTest, org.scalatest.tools.Framework$$anon$1@68b20ffa, false, [SuiteSelector])[0m
 [0m[[0m[0minfo[0m] [0m[0m[32mClassesAndInheritanceDSLTest:[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32mTesting Classes, Objects and Inheritance in DSL SetTheory[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m  Class Definition, fields, and methods[0m[0m
@@ -43,7 +43,7 @@
 [0m[[0m[0minfo[0m] [0m[0m[32m  - should throw error if try to directly invoke its or its parent's protected methods[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m  - should create an inner class and access it using enclosing class to create object[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m  - should create an inner class and access it using enclosing class's instance[0m[0m
-[0m[[0m[0mdebug[0m] [0m[0mRunning TaskDef(InterfaceAndAbstractClassDSLTest, org.scalatest.tools.Framework$$anon$1@5f495cef, false, [SuiteSelector])[0m
+[0m[[0m[0mdebug[0m] [0m[0mRunning TaskDef(InterfaceAndAbstractClassDSLTest, org.scalatest.tools.Framework$$anon$1@68b20ffa, false, [SuiteSelector])[0m
 [0m[[0m[0minfo[0m] [0m[0m[32mInterfaceAndAbstractClassDSLTest:[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32mTesting Interfaces and Abstract Classes in DSL SetTheory[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m  Interface declaration, implementation and inheritance[0m[0m
@@ -70,7 +70,7 @@
 [0m[[0m[0minfo[0m] [0m[0m[32m  - should only implement an inner interface of another interface[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m  - should only implement an inner interface of another class[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m  - should only implement an inner interface of another object[0m[0m
-[0m[[0m[0mdebug[0m] [0m[0mRunning TaskDef(ControlStructuresDSLTest, org.scalatest.tools.Framework$$anon$1@5f495cef, false, [SuiteSelector])[0m
+[0m[[0m[0mdebug[0m] [0m[0mRunning TaskDef(ControlStructuresDSLTest, org.scalatest.tools.Framework$$anon$1@68b20ffa, false, [SuiteSelector])[0m
 [0m[[0m[0minfo[0m] [0m[0m[32mControlStructuresDSLTest:[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32mTesting Control Structures[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m  Testing If Control Structure[0m[0m
@@ -97,7 +97,7 @@
 [0m[[0m[0minfo[0m] [0m[0m[32m  - should throw an exception in constructor while declaring a class[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m  - should throw an exception in one of the methods of class and capture it in a catch block[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m  - should throw a Java exception if the Exception Class does not have a 'cause' public field[0m[0m
-[0m[[0m[0minfo[0m] [0m[0m[36mRun completed in 1 second, 231 milliseconds.[0m[0m
+[0m[[0m[0minfo[0m] [0m[0m[36mRun completed in 1 second, 163 milliseconds.[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[36mTotal number of tests run: 80[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[36mSuites: completed 4, aborted 0[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[36mTests: succeeded 80, failed 0, canceled 0, ignored 0, pending 0[0m[0m
