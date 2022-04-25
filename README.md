@@ -8,7 +8,9 @@ _# Rajat Kumar (UIN: 653922910)
 
 ### Introduction
 Set Theory DSL is a Domain Specific Language created to create classes, objects and perform simple operations on Sets. It is build on top of Scala 3. Set operations like Union, Intersection, Set Difference, Symmetric Set Difference and Cartesian are implemented with the help of expression. Other operations like Inserting and deleting items are also implemented. Language specific operations like assigning the values to variables, fetching those variables, macros and their evaluation and scopes (both named and anonymous scopes) are also implemented. Classes, Object are also allowed to create. Classes can inherit other classes and single class inheritance is supported. There are interfaces and abstract classes also. There is also the support of Nested Classes. Operations on Sets can be performed with the help of this DSLs' capabilities to enable object-oriented programming. Other important features like Dynamic Dispatch and access modifiers are also supported.
-As part of homework 4, the functionality for control structures and exception handling has been introduced by adding support for If, If-Else, and Try-Catch exception handling expressions.
+The functionality for control structures and exception handling has been introduced by adding support for If, If-Else, and Try-Catch exception handling expressions.
+As part of homework 5, it is possible to perform partial evaluation on the set expressions and an additional optimization step has also been intorduced, where certain `SetExpression` can be reduced according to the rules of the optimizing transformer function. 
+This can decrease the complexity for evaluating the expression.
 
 ---
 
@@ -16,7 +18,7 @@ As part of homework 4, the functionality for control structures and exception ha
 
 1. Install [IntelliJ](https://www.jetbrains.com/student/) (this link is for student edition, you can download other as well).
 2. Use [gitHub](https://github.com/RJonMshka/CS474Homework1.git) repo for this project and clone it into your machine using git bash on Windows and terminal on MacOS.
-3. Switch to the `homework4` branch if the default branch is something else.
+3. Switch to the `homework5` branch if the default branch is something else.
 4. Open IntelliJ and go to `File > New > Project from existing Source`, or `File > New > Project from version control`. For the second option, you have to directly provide git repo link and no need to clone the git repo separately.
 5. Make sure you have Java JDK and scala installed on your system. Java JDK between versions 8 and 17 are required to run this project.
 6. We are using Scala version `3.1.1`. Please go to its [docs](https://docs.scala-lang.org/scala3/) for better understanding. You can download Scala 3 from [here](https://www.scala-lang.org/download/).
@@ -29,7 +31,7 @@ As part of homework 4, the functionality for control structures and exception ha
 13. The `build.sbt` is responsible for building your project.
 14. In IntelliJ, go to `Build > Build Project` to build the project.
 15. Once build is finished, you are ready to run the project.
-16. There are four test files `src/test/scala/SetTheoryDSLTest.scala`, `src/test/scala/ClassesAndInheritanceDSLTest.scala`, `src/test/scala/InterfaceAndAbstractClassDSLTest.scala` and `src/test/scala/ControlStructuresDSLTest.scala`. The first one is concerned with testing Set Operations of DSLs' SetExpressions, the second one is focused towards testing the object-oriented features like Classes, Objects and inheritance of this DSL, the third test file tests the features of interfaces and abstract classes with their complex compositions, and lastly, the fourth one is for testing control structures and exception handling capabilities of the DSL.
+16. There are five test files `src/test/scala/SetTheoryDSLTest.scala`, `src/test/scala/ClassesAndInheritanceDSLTest.scala`, `src/test/scala/InterfaceAndAbstractClassDSLTest.scala`, `src/test/scala/ControlStructuresDSLTest.scala` and `src/test/scala/PartialEvaluationDSLTest.scala`. The first one is concerned with testing Set Operations of DSLs' SetExpressions, the second one is focused towards testing the object-oriented features like Classes, Objects and inheritance of this DSL, the third test file tests the features of interfaces and abstract classes with their complex compositions, the fourth one is for testing control structures and exception handling capabilities of the DSL, and lastly, the fifth test suite is designed to test partial evaluation, optimizing transformers and map function of `SetExpression`.
 17. You can add your own test cases in these files to test the project better.
 18. To run test cases directly from terminal, enter the command `sbt compile test` or `sbt clean compile test`. Individual test suites can also be run from IntelliJ IDE.
 19. To run the main file `SetTheoryDSLTest.scala`, enter the command `sbt compile run` or `sbt clean compile run` in the terminal.
@@ -47,24 +49,42 @@ A deep down implementation, syntax and semantics is covered in the next section.
 
 ---
 
-## Set Operation Syntax and Semantics
 
-### Common Language Syntax
+## Evaluation, Optimization and Map
+
+### Expression Evaluations - Partial and Total
 All expressions are of type `SetExpression`.
-Each expression or instruction need to be evaluated for its working. Which means that you have to write `.eval` at the end of the outermost expression.
+Each expression or instruction need to be evaluated for its working. There are two types of evaluations for this DSL.
+
+1. **Total Evaluation**: This can be accomplished by adding or calling eval by `.eval` at the end of the outermost expression. As soon as the eval is called, all the expressions which are part of the expression on which eval is called, will be evaluated and the whole expression is reduced to a single value. This DSL generally works with Set Theory, so, its Set expressions and operation expression returns `Set[Any]` type value. However, this DSL is not limited to just sets. It is capable of return value of type `Any` with expressions like Value, UnitExp, etc.
+2. **Partial Evaluation (and optimization)**: Partial optimization can be achieved by calling method `evaluate` with syntax as `.evaluate`. This is actually a two part process, first is the true partial evaluation which modifies the SetExpression into another one by replacing values with variable references which are available in the binding environment of the scope active during the evaluation of that expression. If the resulting expression does not have any unknown variable reference left, it can be totally evaluated by just calling `.eval`. However, if there are still unknown variable references left in the expression, the expression cannot be reduced to a value. This allows the scope of optimization where the every part of the SetExpression is scanned for optimization. The optimizer tries to reduce the expression for simpler calculations based on some concrete rules of set theory. At the end, it again checks if the optimization has resulted in removal of unknown variable references from the expression and its body. If so, it is going to evaluated and reduced to a value, otherwise expression.
 
 For example, the below code declares a variable with name `var1` and assign it a value of `1` (which is the evaluated value of `Value(3)` expression itself). Since, `Value(1)` is also an expression, but you do not need to call `eval` on it separately. You just have to call `eval` on the outermost expression which is `Assign` in this case.
 ```
-Assign("var1", Value(1) ).eval
+Assign("var1", Value(1) ).eval     // total evaluation (no optimization)
+
 ```
+
+Here is the syntax for partial evaluation:
+```
+SetIdentifier( Value(1) ).evaluete   // partial evaluation + optimization
+```
+
+___
+
+## Set Operation Syntax and Semantics
+
+### Common Language Syntax
 
 There are difference expressions in this DSL and their semantics and syntax are as follows:
 
 ### Value(value: Any): Any
-`Value` expression takes one argument of type `Any` and evaluates to that argument itself. It returns the evaluated value.
+`Value` expression takes one argument of type `Any` and totally evaluates to that argument itself, but partially evaluates to itself. It returns the evaluated value.
 For example:
 ```
-Value(1).eval
+Value(1).eval  // returns 1
+
+Value().evaluate   // return Value(1)
 ```
 The above expression evaluates (returns) to `1`.
 It can take any value, like Strings, Int, Float, Double and other data-types as well.
@@ -74,6 +94,8 @@ For example
 Value(1).eval              // returns 1
 Value(2.0f).eval           // returns 20.0f
 Value("hello").eval        // returns "hello"
+Value("hello").evaluate        // returns Value("hello")
+Value(Value(1)).evaluate      // Value(1)   - also removes nested values
 ```
 
 ### Assign(name: String, setExpression: SetExpression): Any
@@ -92,6 +114,13 @@ Assign("var1", Variable("var2") ).eval    // here var2 is the name of a variable
 Assign("set1", SetIdentifier() ).eval     // this creates an empty set and assigns it to variable with name "set1"
 ```
 
+The partial evaluation is almost similar to this except one exception where a variable can be assigned an expression instead. 
+
+```
+Assign("set1", SetIdentifier(Variable("x")) ).evaluate   // since there is no variable named x in scope, set1 refers to SetIdentifier(Variable("x")) in the binding environment 
+```
+
+
 ### Variable(varName: String): Any
 The `Variable` expression is used to get the value of the variable stored in current referencing environment. It accepts the first argument as a String value which represents the name of the variable it is referring in the table.
 
@@ -99,12 +128,20 @@ For example:
 ```
 Assign("var1", Value(10) ).eval
 Variable("var1").eval      // This code returns 10
+
+// Partial evaluation
+Variable("var1").evaluate   // evaluates to 10
+Variable("unknown").evaluate   // evaluates to Variable("unknown")
+
+// Inside a set expression
+SetIdentifier( Variable("var1"), Variable("unknown") ).evaluate    // evaluates to SetIdentifier( Value(10), Variable("unknown") )
 ```
 
 We can use Variables to store any kind of data type as well as Sets, Macros and other variables also.
 
 ### Macro(macroExpression: SetExpression): SetExpression
 `Macro`s are used for their lazy evaluation. Instead of evaluating the `macroExpression`, it simply returns that `macroExpression`. This helps us to store the expression itself in a variable.
+Macro's partial evaluation only results in partially evaluating its inner expression.
 
 Syntax or usage:
 ```
@@ -116,6 +153,7 @@ In the next section, we will see how to compute these macros on demand.
 
 ### ComputeMacro(macroExpression: SetExpression): Any
 The `ComputeMacro` expression computes a particular macro and returns its evaluated value.
+ComputeMacro's partial evaluation only results in partially evaluating its inner expression.
 
 Syntax:
 
@@ -136,12 +174,19 @@ ComputeMacro( Variable("macro1") ).eval               // return 20
 The `NamedScope` expression is used to create a named scope block. We can even nest multiple scope blocks with it. A NamedScope's bindings can be accessed again in the code if the NamedScope created is a direct children on current scope.
 It takes first argument as scopeName which is a String. `scopeExpArgs` are a sequence of arguments passed to it. It can be more than one. The concept is that you can execute more than one instruction in a particular scope without re-writing its name.
 
+Partial Evaluation: If there are unknown variable in expression, its partial evaluation returns another NamedScope with its inner elements getting partially evaluated and optimized as well.
+
 For Example:
 
 ```
 NamedScope("scope1", 
     Assign( "var1", Value(20) )
 ).eval                                // Create a scope whose binding environment will have one variable named var1 and whose value will be 20
+
+// Partial Evaluation
+NamedScope("scope1", 
+    SetIdentifier(Variable("x"))
+).evaluate                              // evaluates to NamedScope("scope1", SetIdentifier(Variable("x")))  
 ```
 
 Variable shadowing can also be achieved with it. Consider the following example:

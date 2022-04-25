@@ -9,9 +9,9 @@ import SetTheoryDSL.{SetExpression, defaultIfElseOptimizer, defaultIfOptimizer}
 import scala.collection.mutable
 
 class PartialEvaluationDSLTest extends AnyFunSpec {
-  describe("test partial evaluation of SetTheoryDSL") {
+  describe("Testing partial evaluation of SetTheoryDSL") {
 
-    describe("testing basic set expressions with partial evaluation") {
+    describe("Testing basic set expressions with partial evaluation") {
       it("should evaluate the result to a hashset if all the elements are values only") {
         assert(SetIdentifier(Value("1"), Value("2")).evaluate == Set("1", "2"))
       }
@@ -21,7 +21,7 @@ class PartialEvaluationDSLTest extends AnyFunSpec {
       }
     }
 
-    describe("testing set operations with partial evaluation") {
+    describe("Testing set operations with partial evaluation") {
 
       describe("testing partial evaluation and optimization for Union operation") {
         it("should evaluate a Union operation expression to a value if there are no unknown variable") {
@@ -140,7 +140,7 @@ class PartialEvaluationDSLTest extends AnyFunSpec {
 
     }
 
-    describe("test partial evaluation of add and remove operation expressions of SetTheoryDSL") {
+    describe("Testing partial evaluation of add and remove operation expressions of SetTheoryDSL") {
 
       it("evaluation of InsertInto expression with unknown variable expression inside") {
         assert( InsertInto(SetIdentifier(), Variable("h5c6")).evaluate == InsertInto(SetIdentifier(), Variable("h5c6")) )
@@ -169,7 +169,7 @@ class PartialEvaluationDSLTest extends AnyFunSpec {
       }
     }
 
-    describe("testing partial evaluation of If expression") {
+    describe("Testing partial evaluation of If expression") {
       it("should partially evaluates the If expression to another expression if it contains unknown variables") {
         assert(
           If(Contains(SetIdentifier(Value(10)), Variable("h5_c8") ), Then(
@@ -216,7 +216,7 @@ class PartialEvaluationDSLTest extends AnyFunSpec {
       }
     }
 
-    describe("testing partial evaluation of IfElse expression") {
+    describe("Testing partial evaluation of IfElse expression") {
       it("should partially evaluates the IfElse expression to another expression if it contains unknown variables") {
         assert(
           IfElse(Contains(SetIdentifier(Value(10)), Variable("h5_c8") ), Then(
@@ -286,7 +286,7 @@ class PartialEvaluationDSLTest extends AnyFunSpec {
 
     }
 
-    describe("testing scoping constructs with partial evaluation") {
+    describe("Testing scoping constructs with partial evaluation") {
 
       it("should evaluate the named scopes when there are no variables in the expression") {
         assert(
@@ -345,7 +345,7 @@ class PartialEvaluationDSLTest extends AnyFunSpec {
       }
     }
 
-    describe("testing the map method for different expressions") {
+    describe("Testing the map method for different expressions") {
       it("should map the If expression and apply a default transformer function to it") {
         assert(
           If(Contains(SetIdentifier(Value(10)), Value(10) ), Then(
