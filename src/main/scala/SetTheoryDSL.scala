@@ -989,6 +989,7 @@ object SetTheoryDSL {
    * @param scope - the new scope that is introduced by the scoping construct
    * @param beforeEvalBlock - a custom code block that can be lazily evaluated before evaluating scope expressions
    * @param expSeq - expressions which need to be evaluated inside the scoping construct
+   * @return Evaluation of the last expression in the scope
    */
   private def processScope(scope: Scope, beforeEvalBlock: => Unit, expSeq: Seq[SetExpression]): Any =
     // switching the current environment to the new scope
@@ -1011,6 +1012,181 @@ object SetTheoryDSL {
     currentEnvironment.put("scope", new Scope("globalScope", null))
     // add the mechanism to add exception which is going to propagate through the scope chain
     currentEnvironment.put("propagatingException", null)
+
+  /**
+   * This method is used to identify a complete expression. If there are unknown variables in the whole expression, its not complete.
+   * @param exp - Expression to check about completion
+   * @return Boolean representing whether the expression is complete or not
+   */
+  private def isValue(exp: SetExpression): Boolean = exp match {
+    case SetExpression.Value(v) => v match {
+      case v: SetExpression => isValue(v)
+      case v: Any => true
+    }
+    case SetExpression.UnitExp => true
+    case SetExpression.SetIdentifier() => true
+    case SetExpression.SetIdentifier(setExpSeq*) => setExpSeq.forall(value => isValue(value))
+    case SetExpression.Variable(x: String) => false
+    case SetExpression.Union(s1, s2) => isValue(s1) && isValue(s2)
+    case SetExpression.Intersection(s1, s2) => isValue(s1) && isValue(s2)
+    case SetExpression.SetDifference(s1, s2) => isValue(s1) && isValue(s2)
+    case SetExpression.SymDifference(s1, s2) => isValue(s1) && isValue(s2)
+    case SetExpression.CartesianProduct(s1, s2) => isValue(s1) && isValue(s2)
+    case SetExpression.InsertInto(s, setExpSeq*) => isValue(s) && setExpSeq.forall(value => isValue(value))
+    case SetExpression.DeleteFrom(s, setExpSeq*) => isValue(s) && setExpSeq.forall(value => isValue(value))
+    case SetExpression.Contains(s, v) => isValue(s) && isValue(v)
+    case SetExpression.Equals(e1, e2) => isValue(e1) && isValue(e2)
+    case SetExpression.If(cond, thenClause) => isValue(cond) && isValue(thenClause)
+    case SetExpression.IfElse(cond, thenClause, elseClause) => isValue(cond) && isValue(thenClause) && isValue(elseClause)
+    case SetExpression.Then(expSeq*) => expSeq.forall(value => isValue(value))
+    case SetExpression.Else(expSeq*) => expSeq.forall(value => isValue(value))
+    case SetExpression.UnnamedScope(expSeq*) => expSeq.forall(value => isValue(value))
+    case SetExpression.NamedScope(sName, expSeq*) => expSeq.forall(value => isValue(value))
+    case SetExpression.TryCatch(tryExp, catchExpSeq*) => isValue(tryExp) && catchExpSeq.forall(value => isValue(value))
+    case SetExpression.Try(expSeq*) => expSeq.forall(value => isValue(value))
+    case SetExpression.Catch(eName, eType, catchExpSeq*) => catchExpSeq.forall(value => isValue(value))
+    case _ => true
+  }
+
+  /**
+   * Optimization Transformer function used after partial evaluation to reduce the expression
+   * @param exp - expression to be optimized
+   * @return optimized expression
+   */
+  private def optimize(exp: SetExpression): SetExpression = exp match {
+    // rules for optimizing SetIdentifier
+    case SetExpression.SetIdentifier(setExpArgs*) => exp match {
+      case SetExpression.SetIdentifier() => SetExpression.SetIdentifier()
+      // UnitExp is kind of void, so it has to be remove from the set
+      case SetExpression.SetIdentifier(SetExpression.UnitExp) => SetExpression.SetIdentifier()
+      case SetExpression.SetIdentifier(setExpArgs*) => SetExpression.SetIdentifier(
+        setExpArgs.filter(
+          e => e match {
+            case SetExpression.UnitExp => false
+            case _ => true
+          }
+        ).map( optimize )* )
+      case _ => exp
+    }
+    // rules for optimizing Union
+    case SetExpression.Union(s1, s2) => exp match {
+      case SetExpression.Union(SetExpression.SetIdentifier(), s2) => optimize(s2)
+      case SetExpression.Union(s1, SetExpression.SetIdentifier()) => optimize(s1)
+      case _ => SetExpression.Union( optimize(s1), optimize(s2) )
+    }
+    // rules for optimizing Intersection
+    case SetExpression.Intersection(s1, s2) => exp match {
+      case SetExpression.Intersection(SetExpression.SetIdentifier(), s2) => SetExpression.SetIdentifier()
+      case SetExpression.Intersection(s1, SetExpression.SetIdentifier()) => SetExpression.SetIdentifier()
+      case _ => SetExpression.Intersection( optimize(s1), optimize(s2) )
+    }
+    // rules for optimizing SetDifference
+    case SetExpression.SetDifference(s1, s2) => exp match {
+      case SetExpression.SetDifference(SetExpression.SetIdentifier(), s2) => SetExpression.SetIdentifier()
+      case SetExpression.SetDifference(s1, SetExpression.SetIdentifier()) => optimize(s1)
+      case _ => SetExpression.SetDifference(optimize(s1), optimize(s2))
+    }
+    // rules for optimizing SymDifference
+    case SetExpression.SymDifference(s1, s2) => exp match {
+      case SetExpression.SymDifference(SetExpression.SetIdentifier(), s2) => optimize(s2)
+      case SetExpression.SymDifference(s1, SetExpression.SetIdentifier()) => optimize(s1)
+      case _ => SetExpression.SymDifference(optimize(s1), optimize(s2))
+    }
+    // rules for optimizing CartesianProduct
+    case SetExpression.CartesianProduct(s1, s2) => exp match {
+      case SetExpression.CartesianProduct(SetExpression.SetIdentifier(), s2) => SetExpression.SetIdentifier()
+      case SetExpression.CartesianProduct(s1, SetExpression.SetIdentifier()) => SetExpression.SetIdentifier()
+      case _ => SetExpression.CartesianProduct(optimize(s1), optimize(s2))
+    }
+    // rules for optimizing Scope Expressions
+    case SetExpression.UnnamedScope(scopeExpArgs*) => SetExpression.UnnamedScope( scopeExpArgs.map( optimize )* )
+    case SetExpression.NamedScope(n, scopeExpArgs*) => SetExpression.NamedScope(n, scopeExpArgs.map( optimize )* )
+    // rules for optimizing branching expressions - If
+    case SetExpression.If(cond, thenClause) =>
+      val optimizedCond = optimize(cond)
+      val optimizedThen = optimize(thenClause)
+      if isValue(optimizedCond) then
+        if optimizedCond.eval.asInstanceOf[Boolean].equals(true) then
+          optimizedThen match {
+            case SetExpression.Then(thenExp*) => SetExpression.UnnamedScope(thenExp*)
+            case _ => optimizedThen
+          }
+        else
+          SetExpression.UnitExp
+      else
+        SetExpression.If(optimizedCond, optimizedThen)
+    // rules for optimizing branching expressions - IfElse
+    case SetExpression.IfElse(cond, thenClause, elseClause) =>
+      val optimizedCond = optimize(cond)
+      val optimizedThen = optimize(thenClause)
+      val optimizedElse = optimize(elseClause)
+      if isValue(optimizedCond) then
+        if optimizedCond.eval.asInstanceOf[Boolean].equals(true) then
+          optimizedThen match {
+            case SetExpression.Then(thenExp*) => SetExpression.UnnamedScope(thenExp*)
+            case _ => optimizedThen
+          }
+        else
+          optimizedElse match {
+            case SetExpression.Else(elseExp*) => SetExpression.UnnamedScope(elseExp*)
+            case _ => optimizedElse
+          }
+      else
+        SetExpression.IfElse(optimizedCond, optimizedThen, optimizedElse)
+    // no rules for optimizing other expressions
+    case _ => exp
+  }
+
+  /**
+   * This method recursively wait for expression to get fully optimize
+   * @param zero - The initial expression
+   * @param optimizer - the optimizer function that performs the transformation
+   * @return - SetExpression - completely optimized expression as per optimizer rules
+   */
+  @tailrec
+  private def optimizeUntil(zero: SetExpression)(optimizer: SetExpression => SetExpression): SetExpression =
+    if !zero.equals(optimizer(zero)) then optimizeUntil(optimizer(zero))(optimizer) else zero
+
+  /**
+   * A default transformer method allowed to be passed to the users of the DSL - This is specific to If expression
+   * @param exp - expression to transform
+   * @return - transformed expression
+   */
+  def defaultIfOptimizer(exp: SetExpression): SetExpression = exp match {
+    case SetExpression.If(cond, thenClause) =>
+      if isValue(cond) then
+        if cond.eval.asInstanceOf[Boolean].equals(true) then
+          thenClause match {
+            case SetExpression.Then(expArgs*) => SetExpression.UnnamedScope(expArgs *)
+            case _ => thenClause
+          }
+        else SetExpression.UnitExp
+      else
+        SetExpression.If(cond, thenClause)
+    case _ => exp
+  }
+
+  /**
+   * A default transformer method allowed to be passed to the users of the DSL - This is specific to IfElse expression
+   * @param exp - expression to transform
+   * @return - transformed expression
+   */
+  def defaultIfElseOptimizer(exp: SetExpression): SetExpression = exp match {
+    case SetExpression.IfElse(cond, thenClause, elseClause) =>
+      if isValue(cond) then
+        if cond.eval.asInstanceOf[Boolean].equals(true) then
+          thenClause match {
+            case SetExpression.Then(expArgs*) => SetExpression.UnnamedScope( expArgs* )
+            case _ => thenClause
+          }
+        else elseClause match {
+          case SetExpression.Else(expArgs*) => SetExpression.UnnamedScope( expArgs* )
+          case _ => elseClause
+        }
+      else
+        SetExpression.IfElse(cond, thenClause, elseClause)
+    case _ => exp
+  }
 
 
   /** Enumeration for different types of Set Expressions
@@ -1370,14 +1546,18 @@ object SetTheoryDSL {
      */
     case GarbageCollector
 
+    /**
+     * UnitExp Expression
+     * A Unit or Void expression that evaluates to Scala type Unit or ()
+     */
     case UnitExp
 
-    /** This method evaluates SetExpressions
-     * Description - The body of this method is the implementation of above abstract data types
+    @tailrec
+    /** This method evaluates SetExpressions partially
+     * Description - It performs the partial evaluation by replacing all the known variable references with their values and returns the same expression with known variables replaced
      *
-     * @return Any
+     * @return SetExpression
      */
-
     private def pEval: SetExpression = this match {
       case Value(v) => v match {
         case v: SetExpression => v.pEval
@@ -1500,9 +1680,15 @@ object SetTheoryDSL {
       case _ => this
     }
 
+    /** This method evaluates SetExpressions. First it partially evaluates, if there are still unknown variables left, it returns the expression directly.
+     * However, if the expression can be evaluated totally, it returns the value after evaluating the expression and reducing it to either a Any value or Set[Any].
+     *
+     * @return  Set[Any] | SetExpression | Any  This part does not make much sense but it is here to represent that this DSL can evaluate to all three values specified in a Union type
+     */
     def evaluate: Set[Any] | SetExpression | Any =
+      // first do partial evaluation
       val pEvalExp = this.pEval
-
+      // if no unknown variables then totally evaluate, otherwise perform optimizations
       if isValue(pEvalExp) then
         pEvalExp.eval
       else
@@ -1511,10 +1697,16 @@ object SetTheoryDSL {
         // if the performance optimization results in an expression with no undefined variable, it is better to check again
         if isValue(optimizedExp) then optimizedExp.eval else optimizedExp
 
+    /** This method evaluates SetExpressions totally - there is no optimization here
+     * Description - The body of this method is the implementation of above abstract data types
+     *
+     * @return Any
+     */
     def eval: Any = (this: @unchecked) match {
-
+      // UnitExp evaluates to a Unit value
       case UnitExp => ()
 
+      // performs garbage collection
       case GarbageCollector => gc()
       // Value Expression Implementation
       case Value(v) => v
@@ -1542,7 +1734,6 @@ object SetTheoryDSL {
           val newScope: Scope = new Scope(scopeName, getCurrentScope)
           // adding the new scope's reference to current scope's children
           getCurrentScope.childScopes += (scopeName -> newScope)
-
           processScope(newScope,{}, expArgs)
         else
           // find the nested scope in children map if already there
@@ -1812,190 +2003,58 @@ object SetTheoryDSL {
         else throw new Exception("DSL Exception must have a 'cause' public field")
     }
 
+    /**
+     * The Map method
+     * Since, the SetExpression can be thought of as a container of other expression in many terms, the map actually works on SetExpression itself
+     * @param transformerFunction - a transformer function which has the ability to transform the expression and/or its containing expressions
+     * @return - transformed SetExpression container
+     */
     def map(transformerFunction: SetExpression => SetExpression): SetExpression = this match {
+      // maps to the child expression of Assign expression
       case Assign(name, exp) => Assign(name, transformerFunction(exp))
+      // maps to the child expression of Macro expression
       case Macro(exp) => Macro(transformerFunction(exp))
+      // maps to the child expression of ComputeMacro expression
       case ComputeMacro(exp) => ComputeMacro(transformerFunction(exp))
+      // maps to the child expressions of NamedScope expression
       case NamedScope(scopeName, scopeExpArgs*) => NamedScope(scopeName, scopeExpArgs.map( transformerFunction(_) )*)
+      // maps to the child expressions of UnnamedScope expression
       case UnnamedScope(scopeExpArgs*) => UnnamedScope(scopeExpArgs.map( transformerFunction(_) )*)
+      // maps to the set element expressions of SetIdentifier expression
       case SetIdentifier(setExpArgs*) => SetIdentifier( setExpArgs.map( transformerFunction(_) )* )
+      // maps to the sets passed to Union expression
       case Union(s1, s2) => Union(transformerFunction(s1), transformerFunction(s2))
+      // maps to the sets passed to Intersection expression
       case Intersection(s1, s2) => Intersection(transformerFunction(s1), transformerFunction(s2))
+      // maps to the sets passed to SetDifference expression
       case SetDifference(s1, s2) => SetDifference(transformerFunction(s1), transformerFunction(s2))
+      // maps to the sets passed to SymDifference expression
       case SymDifference(s1, s2) => SymDifference(transformerFunction(s1), transformerFunction(s2))
+      // maps to the sets passed to CartesianProduct expression
       case CartesianProduct(s1, s2) => CartesianProduct(transformerFunction(s1), transformerFunction(s2))
+      // maps to the child expression of InsertInto expression - which are to inserted into the set
       case InsertInto(setExp, setExpArgs*) => InsertInto(setExp, setExpArgs.map( transformerFunction(_) )*)
+      // maps to the child expression of DeleteFrom expression - which are to deleted from the set
       case DeleteFrom(setExp, setExpArgs*) => DeleteFrom(setExp, setExpArgs.map( transformerFunction(_) )*)
+      // maps to the inner expressions of class definition expression
       case ClassDef(cName, clsExpArgs*) => ClassDef(cName, clsExpArgs.map( transformerFunction(_) )* )
+      // maps to the inner expressions of abstract class definition expression
       case AbstractClassDef(cName, clsExpArgs*) => AbstractClassDef(cName, clsExpArgs.map( transformerFunction(_) )* )
+      // maps to the inner expressions of interface definition expression
       case InterfaceDef(intName, expArgs*) => InterfaceDef(intName, expArgs.map( transformerFunction(_) )* )
+      // maps to the inner expressions of exception class definition expression
       case ExceptionClassDef(cName, classExpArgs*) => ExceptionClassDef(cName, classExpArgs.map( transformerFunction(_) )* )
+      // maps to the arguments that are passed to construct a new object
       case NewObject(classRef, cArgs*) => NewObject(classRef, cArgs.map( transformerFunction(_) )* )
+      // maps to the same expression for other expressions - this can be modified as per specific desired map behavior as data structure of all SetExpression are different
       case _ => transformerFunction(this)
     }
 
-
-  private def isValue(exp: SetExpression): Boolean = exp match {
-    case SetExpression.Value(v) => v match {
-      case v: SetExpression => isValue(v)
-      case v: Any => true
-    }
-    case SetExpression.UnitExp => true
-    case SetExpression.SetIdentifier() => true
-    case SetExpression.SetIdentifier(setExpSeq*) => setExpSeq.forall(value => isValue(value))
-    case SetExpression.Variable(x: String) => false
-    case SetExpression.Union(s1, s2) => isValue(s1) && isValue(s2)
-    case SetExpression.Intersection(s1, s2) => isValue(s1) && isValue(s2)
-    case SetExpression.SetDifference(s1, s2) => isValue(s1) && isValue(s2)
-    case SetExpression.SymDifference(s1, s2) => isValue(s1) && isValue(s2)
-    case SetExpression.CartesianProduct(s1, s2) => isValue(s1) && isValue(s2)
-    case SetExpression.InsertInto(s, setExpSeq*) => isValue(s) && setExpSeq.forall(value => isValue(value))
-    case SetExpression.DeleteFrom(s, setExpSeq*) => isValue(s) && setExpSeq.forall(value => isValue(value))
-    case SetExpression.Contains(s, v) => isValue(s) && isValue(v)
-    case SetExpression.Equals(e1, e2) => isValue(e1) && isValue(e2)
-    case SetExpression.If(cond, thenClause) => isValue(cond) && isValue(thenClause)
-    case SetExpression.IfElse(cond, thenClause, elseClause) => isValue(cond) && isValue(thenClause) && isValue(elseClause)
-    case SetExpression.Then(expSeq*) => expSeq.forall(value => isValue(value))
-    case SetExpression.Else(expSeq*) => expSeq.forall(value => isValue(value))
-    case SetExpression.UnnamedScope(expSeq*) => expSeq.forall(value => isValue(value))
-    case SetExpression.NamedScope(sName, expSeq*) => expSeq.forall(value => isValue(value))
-    case SetExpression.TryCatch(tryExp, catchExpSeq*) => isValue(tryExp) && catchExpSeq.forall(value => isValue(value))
-    case SetExpression.Try(expSeq*) => expSeq.forall(value => isValue(value))
-    case SetExpression.Catch(eName, eType, catchExpSeq*) => catchExpSeq.forall(value => isValue(value))
-    case _ => true
-  }
-
-  private def optimize(exp: SetExpression): SetExpression = exp match {
-    case SetExpression.SetIdentifier(setExpArgs*) => exp match {
-      case SetExpression.SetIdentifier() => SetExpression.SetIdentifier()
-      case SetExpression.SetIdentifier(SetExpression.UnitExp) => SetExpression.SetIdentifier()
-      case SetExpression.SetIdentifier(setExpArgs*) => SetExpression.SetIdentifier(
-        setExpArgs.filter(
-          e => e match {
-            case SetExpression.UnitExp => false
-            case _ => true
-          }
-        ).map( optimize )* )
-      case _ => exp
-    }
-    case SetExpression.Union(s1, s2) => exp match {
-      case SetExpression.Union(SetExpression.SetIdentifier(), s2) => optimize(s2)
-      case SetExpression.Union(s1, SetExpression.SetIdentifier()) => optimize(s1)
-      case _ => SetExpression.Union( optimize(s1), optimize(s2) )
-    }
-    case SetExpression.Intersection(s1, s2) => exp match {
-      case SetExpression.Intersection(SetExpression.SetIdentifier(), s2) => SetExpression.SetIdentifier()
-      case SetExpression.Intersection(s1, SetExpression.SetIdentifier()) => SetExpression.SetIdentifier()
-      case _ => SetExpression.Intersection( optimize(s1), optimize(s2) )
-    }
-    case SetExpression.SetDifference(s1, s2) => exp match {
-      case SetExpression.SetDifference(SetExpression.SetIdentifier(), s2) => SetExpression.SetIdentifier()
-      case SetExpression.SetDifference(s1, SetExpression.SetIdentifier()) => optimize(s1)
-      case _ => SetExpression.SetDifference(optimize(s1), optimize(s2))
-    }
-    case SetExpression.SymDifference(s1, s2) => exp match {
-      case SetExpression.SymDifference(SetExpression.SetIdentifier(), s2) => optimize(s2)
-      case SetExpression.SymDifference(s1, SetExpression.SetIdentifier()) => optimize(s1)
-      case _ => SetExpression.SymDifference(optimize(s1), optimize(s2))
-    }
-    case SetExpression.CartesianProduct(s1, s2) => exp match {
-      case SetExpression.CartesianProduct(SetExpression.SetIdentifier(), s2) => SetExpression.SetIdentifier()
-      case SetExpression.CartesianProduct(s1, SetExpression.SetIdentifier()) => SetExpression.SetIdentifier()
-      case _ => SetExpression.CartesianProduct(optimize(s1), optimize(s2))
-    }
-    case SetExpression.UnnamedScope(scopeExpArgs*) => SetExpression.UnnamedScope( scopeExpArgs.map( optimize )* )
-    case SetExpression.NamedScope(n, scopeExpArgs*) => SetExpression.NamedScope(n, scopeExpArgs.map( optimize )* )
-    case SetExpression.If(cond, thenClause) =>
-      val optimizedCond = optimize(cond)
-      val optimizedThen = optimize(thenClause)
-      if isValue(optimizedCond) then
-        if optimizedCond.eval.asInstanceOf[Boolean].equals(true) then
-          optimizedThen match {
-            case SetExpression.Then(thenExp*) => SetExpression.UnnamedScope(thenExp*)
-            case _ => optimizedThen
-          }
-        else
-          SetExpression.UnitExp
-      else
-        SetExpression.If(optimizedCond, optimizedThen)
-
-    case SetExpression.IfElse(cond, thenClause, elseClause) =>
-      val optimizedCond = optimize(cond)
-      val optimizedThen = optimize(thenClause)
-      val optimizedElse = optimize(elseClause)
-      if isValue(optimizedCond) then
-        if optimizedCond.eval.asInstanceOf[Boolean].equals(true) then
-          optimizedThen match {
-            case SetExpression.Then(thenExp*) => SetExpression.UnnamedScope(thenExp*)
-            case _ => optimizedThen
-          }
-        else
-          optimizedElse match {
-            case SetExpression.Else(elseExp*) => SetExpression.UnnamedScope(elseExp*)
-            case _ => optimizedElse
-          }
-      else
-        SetExpression.IfElse(optimizedCond, optimizedThen, optimizedElse)
-
-    case _ => exp
-  }
-
-  @tailrec
-  private def optimizeUntil(zero: SetExpression)(optimizer: SetExpression => SetExpression): SetExpression =
-    if !zero.equals(optimizer(zero)) then optimizeUntil(optimizer(zero))(optimizer) else zero
-
-  def defaultIfOptimizer(exp: SetExpression): SetExpression = exp match {
-    case SetExpression.If(cond, thenClause) =>
-      if isValue(cond) then
-        if cond.eval.asInstanceOf[Boolean].equals(true) then
-          thenClause match {
-            case SetExpression.Then(expArgs*) => SetExpression.UnnamedScope(expArgs *)
-            case _ => thenClause
-          }
-        else SetExpression.UnitExp
-      else
-        SetExpression.If(cond, thenClause)
-    case _ => exp
-  }
-
-  def defaultIfElseOptimizer(exp: SetExpression): SetExpression = exp match {
-    case SetExpression.IfElse(cond, thenClause, elseClause) =>
-      if isValue(cond) then
-        if cond.eval.asInstanceOf[Boolean].equals(true) then
-          thenClause match {
-            case SetExpression.Then(expArgs*) => SetExpression.UnnamedScope( expArgs* )
-            case _ => thenClause
-          }
-        else elseClause match {
-          case SetExpression.Else(expArgs*) => SetExpression.UnnamedScope( expArgs* )
-          case _ => elseClause
-        }
-      else
-        SetExpression.IfElse(cond, thenClause, elseClause)
-    case _ => exp
-  }
 
   /**
    * Main Function, entry point to the application
    */
   @main def runSetTheoryDSL(): Unit = {
     println("Program runs successfully")
-
-    import SetExpression.*
-
-    def tr(exp :SetExpression): SetExpression = exp match {
-      case Value(v) => v match {
-        case v: Int => Value(v + 1)
-        case _ => exp
-      }
-      case _ => exp
-    }
-
-    val x = SetIdentifier(Variable("s")).evaluate
-
-    print( x match {
-      case x: SetExpression => x.map(defaultIfOptimizer)
-      case _ => x
-    } )
   }
 }
