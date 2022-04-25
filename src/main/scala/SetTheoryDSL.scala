@@ -60,7 +60,7 @@ object SetTheoryDSL {
    * A construct to capture a reference a try and catch expression in the scope
    * @param catchExpSeq - Sequence of SetExpression.Catch expressions for that try catch block
    */
-  private class TryStruct(val catchExpSeq: Seq[SetExpression.Catch])
+  private class TryStruct(val catchExpSeq: Seq[SetExpression])
 
   /**
    * Data Structure for storing interfaces
@@ -588,11 +588,15 @@ object SetTheoryDSL {
    * @param scopeEnv Scope of the environment where this function needs to find the variable
    */
   @tailrec
-  private def getVariable(varName: String, scopeEnv: Scope): Any =
-    if !(!scopeEnv.bindingEnvironment.contains(varName) && scopeEnv.scopeParent != null) then
-      scopeEnv.bindingEnvironment(varName)
-    else
+  private def getVariable(varName: String, scopeEnv: Scope): Any = if (scopeEnv.bindingEnvironment.contains(varName)) {
+    scopeEnv.bindingEnvironment(varName)
+  } else {
+    if (scopeEnv.scopeParent != null) {
       getVariable(varName, scopeEnv.scopeParent)
+    } else {
+      null
+    }
+  }
 
   /**
    * This method finds and returns a reference to class declared in a particular scope
@@ -986,17 +990,18 @@ object SetTheoryDSL {
    * @param beforeEvalBlock - a custom code block that can be lazily evaluated before evaluating scope expressions
    * @param expSeq - expressions which need to be evaluated inside the scoping construct
    */
-  private def processScope(scope: Scope, beforeEvalBlock: => Unit, expSeq: Seq[SetExpression]): Unit =
+  private def processScope(scope: Scope, beforeEvalBlock: => Unit, expSeq: Seq[SetExpression]): Any =
     // switching the current environment to the new scope
     createNewScope(scope)
     beforeEvalBlock
     // evaluating each expression passed to the scope
-    expSeq.foreach(exp => {
+    val evaluatedExpSeq = expSeq.map(exp => {
       // only evaluate the expression if there is no exception propagating
       if getPropagatingException == null then exp.eval else ()
     })
     // handle exception and its propagation
     exceptionPropagation()
+    evaluatedExpSeq.last
 
   /**
    * This method resets the global scope and removes all previous bindings, please use this carefully
@@ -1308,7 +1313,7 @@ object SetTheoryDSL {
      * If Expression
      * A Control Structure to handle conditional evaluation
      */
-    case If(ConditionExp: SetExpression, thenClause: SetExpression.Then)
+    case If(ConditionExp: SetExpression, thenClause: SetExpression)
 
     /**
      * Check Expression
@@ -1320,7 +1325,7 @@ object SetTheoryDSL {
      * IfElse Expression
      * A Control Structure to handle conditional evaluation
      */
-    case IfElse(ConditionExp: SetExpression, thenClause: SetExpression.Then, elseClause: SetExpression.Else)
+    case IfElse(ConditionExp: SetExpression, thenClause: SetExpression, elseClause: SetExpression)
 
     /**
      * Then Expression
@@ -1339,7 +1344,7 @@ object SetTheoryDSL {
      * A control structure for writing protected code
      * Consists of a Try Expression and multiple Catch expressions
      */
-    case TryCatch(tryExp: SetExpression.Try, catchExpSeq: SetExpression.Catch*)
+    case TryCatch(tryExp: SetExpression, catchExpSeq: SetExpression*)
 
     /**
      * Try Expression
@@ -1365,12 +1370,151 @@ object SetTheoryDSL {
      */
     case GarbageCollector
 
+    case UnitExp
+
     /** This method evaluates SetExpressions
      * Description - The body of this method is the implementation of above abstract data types
      *
      * @return Any
      */
+
+    private def pEval: SetExpression = this match {
+      case Value(v) => v match {
+        case v: SetExpression => v.pEval
+        case _ => Value(v)
+      }
+
+      case Variable(varName) =>
+        val variable = getVariable(varName, getCurrentScope)
+        if variable != null then Value(variable).pEval else Variable(varName)
+
+      case Assign(varName, exp) =>
+        addBindingToScope(varName, exp.pEval)
+        UnitExp
+
+      case Macro(exp) => Macro(exp.pEval)
+
+      case ComputeMacro(exp) => ComputeMacro(exp.pEval)
+
+      case SetIdentifier(setExpArgs*) =>
+        val evaluatedArgs = setExpArgs.map( _.pEval )
+        SetIdentifier(evaluatedArgs*)
+
+      case Union(s1, s2) =>
+        val pEvalS1 = s1.pEval
+        val pEvalS2 = s2.pEval
+        Union(pEvalS1, pEvalS2)
+
+      case Intersection(s1, s2) =>
+        val pEvalS1 = s1.pEval
+        val pEvalS2 = s2.pEval
+        Intersection(pEvalS1, pEvalS2)
+
+      case SetDifference(s1, s2) =>
+        val pEvalS1 = s1.pEval
+        val pEvalS2 = s2.pEval
+        SetDifference(pEvalS1, pEvalS2)
+
+      case SymDifference(s1, s2) =>
+        val pEvalS1 = s1.pEval
+        val pEvalS2 = s2.pEval
+        SymDifference(pEvalS1, pEvalS2)
+
+      case CartesianProduct(s1, s2) =>
+        val pEvalS1 = s1.pEval
+        val pEvalS2 = s2.pEval
+        CartesianProduct(pEvalS1, pEvalS2)
+
+      case InsertInto(s, setExpArgs*) =>
+        val pEvalSet = s.pEval
+        val setExpArgsPEval = setExpArgs.map( _.pEval )
+        InsertInto(pEvalSet, setExpArgsPEval*)
+
+      case DeleteFrom(s, setExpArgs*) =>
+        val pEvalSet = s.pEval
+        val setExpArgsPEval = setExpArgs.map( _.pEval )
+        DeleteFrom(pEvalSet, setExpArgsPEval*)
+
+      case Contains(s, valueExp) => Contains(s.pEval, valueExp.pEval)
+
+      case Equals(exp1, exp2) => Equals(exp1.pEval, exp2.pEval)
+
+      case If(cond, thenClause) => If(cond.pEval, thenClause.pEval)
+
+      case IfElse(cond, thenClause, elseClause) => IfElse(cond.pEval, thenClause.pEval, elseClause.pEval)
+
+      case Then(expSeq*) =>
+        val newScope: Scope = new Scope(null, getCurrentScope)
+        createNewScope(newScope)
+        val pEvalArgs = expSeq.map( _.pEval )
+        switchToParentScope()
+        Then( pEvalArgs* )
+
+
+      case Else(expSeq*) =>
+        val newScope: Scope = new Scope(null, getCurrentScope)
+        createNewScope(newScope)
+        val pEvalArgs = expSeq.map( _.pEval )
+        switchToParentScope()
+        Else( pEvalArgs* )
+
+      case UnnamedScope(expSeq*) =>
+        val newScope: Scope = new Scope(null, getCurrentScope)
+        createNewScope(newScope)
+        val pEvalArgs = expSeq.map( _.pEval )
+        switchToParentScope()
+        UnnamedScope( pEvalArgs* )
+
+      case NamedScope(scopeName, expSeq*) =>
+        if getCurrentScope.childScopes.isEmpty || !getCurrentScope.childScopes.contains(scopeName) then
+          val newScope: Scope = new Scope(scopeName, getCurrentScope)
+          getCurrentScope.childScopes += (scopeName -> newScope)
+          createNewScope(newScope)
+          val pEvalArgs = expSeq.map( _.pEval )
+          switchToParentScope()
+          NamedScope(scopeName, pEvalArgs*)
+        else
+          val nestedScope: Scope = getCurrentScope.childScopes(scopeName)
+          createNewScope(nestedScope)
+          val pEvalArgs = expSeq.map( _.pEval )
+          switchToParentScope()
+          NamedScope(scopeName, pEvalArgs*)
+
+      case TryCatch(tryExp, catchExpSeq*) => TryCatch(tryExp.pEval, catchExpSeq.map( _.pEval )*)
+
+      case Try(expSeq*) =>
+        val newScope: Scope = new Scope(null, getCurrentScope)
+        createNewScope(newScope)
+        val pEvalArgs = expSeq.map( _.pEval )
+        switchToParentScope()
+        Try( pEvalArgs* )
+
+      case Catch(eName, eType, catchExpSeq*) =>
+        val newScope: Scope = new Scope(null, getCurrentScope)
+        createNewScope(newScope)
+        val pEvalArgs = catchExpSeq.map( _.pEval )
+        switchToParentScope()
+        Catch(eName, eType, pEvalArgs* )
+
+      // no changes for class, interface, exception and other expressions
+      case _ => this
+    }
+
+    def evaluate: Set[Any] | SetExpression | Any =
+      val pEvalExp = this.pEval
+
+      if isValue(pEvalExp) then
+        pEvalExp.eval
+      else
+        // perform optimization transformations
+        val optimizedExp = optimizeUntil(pEvalExp)(optimize)
+        // if the performance optimization results in an expression with no undefined variable, it is better to check again
+        if isValue(optimizedExp) then optimizedExp.eval else optimizedExp
+
     def eval: Any = (this: @unchecked) match {
+
+      case UnitExp => ()
+
       case GarbageCollector => gc()
       // Value Expression Implementation
       case Value(v) => v
@@ -1666,10 +1810,189 @@ object SetTheoryDSL {
             globalScopeExceptionHandling()
         else throw new Exception("DSL Exception must have a 'cause' public field")
     }
+
+    def map(transformerFunction: SetExpression => SetExpression): SetExpression = this match {
+      case Assign(name, exp) => Assign(name, transformerFunction(exp))
+      case Macro(exp) => Macro(transformerFunction(exp))
+      case ComputeMacro(exp) => ComputeMacro(transformerFunction(exp))
+      case NamedScope(scopeName, scopeExpArgs*) => NamedScope(scopeName, scopeExpArgs.map( transformerFunction(_) )*)
+      case UnnamedScope(scopeExpArgs*) => UnnamedScope(scopeExpArgs.map( transformerFunction(_) )*)
+      case SetIdentifier(setExpArgs*) => SetIdentifier( setExpArgs.map( transformerFunction(_) )* )
+      case Union(s1, s2) => Union(transformerFunction(s1), transformerFunction(s2))
+      case Intersection(s1, s2) => Intersection(transformerFunction(s1), transformerFunction(s2))
+      case SetDifference(s1, s2) => SetDifference(transformerFunction(s1), transformerFunction(s2))
+      case SymDifference(s1, s2) => SymDifference(transformerFunction(s1), transformerFunction(s2))
+      case CartesianProduct(s1, s2) => CartesianProduct(transformerFunction(s1), transformerFunction(s2))
+      case InsertInto(setExp, setExpArgs*) => InsertInto(setExp, setExpArgs.map( transformerFunction(_) )*)
+      case DeleteFrom(setExp, setExpArgs*) => DeleteFrom(setExp, setExpArgs.map( transformerFunction(_) )*)
+      case ClassDef(cName, clsExpArgs*) => ClassDef(cName, clsExpArgs.map( transformerFunction(_) )* )
+      case AbstractClassDef(cName, clsExpArgs*) => AbstractClassDef(cName, clsExpArgs.map( transformerFunction(_) )* )
+      case InterfaceDef(intName, expArgs*) => InterfaceDef(intName, expArgs.map( transformerFunction(_) )* )
+      case ExceptionClassDef(cName, classExpArgs*) => ExceptionClassDef(cName, classExpArgs.map( transformerFunction(_) )* )
+      case NewObject(classRef, cArgs*) => NewObject(classRef, cArgs.map( transformerFunction(_) )* )
+      case _ => transformerFunction(this)
+    }
+
+
+  private def isValue(exp: SetExpression): Boolean = exp match {
+    case SetExpression.Value(v) => v match {
+      case v: SetExpression => isValue(v)
+      case v: Any => true
+    }
+    case SetExpression.UnitExp => true
+    case SetExpression.SetIdentifier() => true
+    case SetExpression.SetIdentifier(setExpSeq*) => setExpSeq.forall(value => isValue(value))
+    case SetExpression.Variable(x: String) => false
+    case SetExpression.Union(s1, s2) => isValue(s1) && isValue(s2)
+    case SetExpression.Intersection(s1, s2) => isValue(s1) && isValue(s2)
+    case SetExpression.SetDifference(s1, s2) => isValue(s1) && isValue(s2)
+    case SetExpression.SymDifference(s1, s2) => isValue(s1) && isValue(s2)
+    case SetExpression.CartesianProduct(s1, s2) => isValue(s1) && isValue(s2)
+    case SetExpression.InsertInto(s, setExpSeq*) => isValue(s) && setExpSeq.forall(value => isValue(value))
+    case SetExpression.DeleteFrom(s, setExpSeq*) => isValue(s) && setExpSeq.forall(value => isValue(value))
+    case SetExpression.Contains(s, v) => isValue(s) && isValue(v)
+    case SetExpression.Equals(e1, e2) => isValue(e1) && isValue(e2)
+    case SetExpression.If(cond, thenClause) => isValue(cond) && isValue(thenClause)
+    case SetExpression.IfElse(cond, thenClause, elseClause) => isValue(cond) && isValue(thenClause) && isValue(elseClause)
+    case SetExpression.Then(expSeq*) => expSeq.forall(value => isValue(value))
+    case SetExpression.Else(expSeq*) => expSeq.forall(value => isValue(value))
+    case SetExpression.UnnamedScope(expSeq*) => expSeq.forall(value => isValue(value))
+    case SetExpression.NamedScope(sName, expSeq*) => expSeq.forall(value => isValue(value))
+    case SetExpression.TryCatch(tryExp, catchExpSeq*) => isValue(tryExp) && catchExpSeq.forall(value => isValue(value))
+    case SetExpression.Try(expSeq*) => expSeq.forall(value => isValue(value))
+    case SetExpression.Catch(eName, eType, catchExpSeq*) => catchExpSeq.forall(value => isValue(value))
+    case _ => true
+  }
+
+  private def optimize(exp: SetExpression): SetExpression = exp match {
+    case SetExpression.SetIdentifier(setExpArgs*) => exp match {
+      case SetExpression.SetIdentifier() => SetExpression.SetIdentifier()
+      case SetExpression.SetIdentifier(SetExpression.UnitExp) => SetExpression.SetIdentifier()
+      case SetExpression.SetIdentifier(setExpArgs*) => SetExpression.SetIdentifier(
+        setExpArgs.filter(
+          e => e match {
+            case SetExpression.UnitExp => false
+            case _ => true
+          }
+        ).map( optimize )* )
+      case _ => exp
+    }
+    case SetExpression.Union(s1, s2) => exp match {
+      case SetExpression.Union(SetExpression.SetIdentifier(), s2) => optimize(s2)
+      case SetExpression.Union(s1, SetExpression.SetIdentifier()) => optimize(s1)
+      case _ => SetExpression.Union( optimize(s1), optimize(s2) )
+    }
+    case SetExpression.Intersection(s1, s2) => exp match {
+      case SetExpression.Intersection(SetExpression.SetIdentifier(), s2) => SetExpression.SetIdentifier()
+      case SetExpression.Intersection(s1, SetExpression.SetIdentifier()) => SetExpression.SetIdentifier()
+      case _ => SetExpression.Intersection( optimize(s1), optimize(s2) )
+    }
+    case SetExpression.SetDifference(s1, s2) => exp match {
+      case SetExpression.SetDifference(SetExpression.SetIdentifier(), s2) => SetExpression.SetIdentifier()
+      case SetExpression.SetDifference(s1, SetExpression.SetIdentifier()) => optimize(s1)
+      case _ => SetExpression.SetDifference(optimize(s1), optimize(s2))
+    }
+    case SetExpression.SymDifference(s1, s2) => exp match {
+      case SetExpression.SymDifference(SetExpression.SetIdentifier(), s2) => optimize(s2)
+      case SetExpression.SymDifference(s1, SetExpression.SetIdentifier()) => optimize(s1)
+      case _ => SetExpression.SymDifference(optimize(s1), optimize(s2))
+    }
+    case SetExpression.CartesianProduct(s1, s2) => exp match {
+      case SetExpression.CartesianProduct(SetExpression.SetIdentifier(), s2) => SetExpression.SetIdentifier()
+      case SetExpression.CartesianProduct(s1, SetExpression.SetIdentifier()) => SetExpression.SetIdentifier()
+      case _ => SetExpression.CartesianProduct(optimize(s1), optimize(s2))
+    }
+    case SetExpression.If(cond, thenClause) =>
+      val optimizedCond = optimize(cond)
+      val optimizedThen = optimize(thenClause)
+      if isValue(optimizedCond) then
+        if optimizedCond.eval.asInstanceOf[Boolean].equals(true) then
+          optimizedThen match {
+            case SetExpression.Then(thenExp*) => SetExpression.UnnamedScope(thenExp*)
+            case _ => optimizedThen
+          }
+        else
+          SetExpression.UnitExp
+      else
+        SetExpression.If(optimizedCond, optimizedThen)
+
+    case SetExpression.IfElse(cond, thenClause, elseClause) =>
+      val optimizedCond = optimize(cond)
+      val optimizedThen = optimize(thenClause)
+      val optimizedElse = optimize(elseClause)
+      if isValue(optimizedCond) then
+        if optimizedCond.eval.asInstanceOf[Boolean].equals(true) then
+          optimizedThen match {
+            case SetExpression.Then(thenExp*) => SetExpression.UnnamedScope(thenExp*)
+            case _ => optimizedThen
+          }
+        else
+          optimizedElse match {
+            case SetExpression.Else(elseExp*) => SetExpression.UnnamedScope(elseExp*)
+            case _ => optimizedElse
+          }
+      else
+        SetExpression.IfElse(optimizedCond, optimizedThen, optimizedElse)
+
+    case _ => exp
+  }
+
+  @tailrec
+  private def optimizeUntil(zero: SetExpression)(optimizer: SetExpression => SetExpression): SetExpression =
+    if !zero.equals(optimizer(zero)) then optimizeUntil(optimizer(zero))(optimizer) else zero
+
+  def defaultIfOptimizer(exp: SetExpression): SetExpression = exp match {
+    case SetExpression.If(cond, thenClause) =>
+      if isValue(cond) then
+        if cond.eval.asInstanceOf[Boolean].equals(true) then
+          thenClause match {
+            case SetExpression.Then(expArgs*) => SetExpression.UnnamedScope(expArgs *)
+            case _ => thenClause
+          }
+        else SetExpression.UnitExp
+      else
+        SetExpression.If(cond, thenClause)
+    case _ => exp
+  }
+
+  def defaultIfElseOptimizer(exp: SetExpression): SetExpression = exp match {
+    case SetExpression.IfElse(cond, thenClause, elseClause) =>
+      if isValue(cond) then
+        if cond.eval.asInstanceOf[Boolean].equals(true) then
+          thenClause match {
+            case SetExpression.Then(expArgs*) => SetExpression.UnnamedScope( expArgs* )
+            case _ => thenClause
+          }
+        else elseClause match {
+          case SetExpression.Else(expArgs*) => SetExpression.UnnamedScope( expArgs* )
+          case _ => elseClause
+        }
+      else
+        SetExpression.IfElse(cond, thenClause, elseClause)
+    case _ => exp
+  }
+
   /**
    * Main Function, entry point to the application
    */
   @main def runSetTheoryDSL(): Unit = {
     println("Program runs successfully")
+
+    import SetExpression.*
+
+    def tr(exp :SetExpression): SetExpression = exp match {
+      case Value(v) => v match {
+        case v: Int => Value(v + 1)
+        case _ => exp
+      }
+      case _ => exp
+    }
+
+    val x = SetIdentifier(Variable("s")).evaluate
+
+    print( x match {
+      case x: SetExpression => x.map(defaultIfOptimizer)
+      case _ => x
+    } )
   }
 }
