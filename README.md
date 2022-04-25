@@ -9,7 +9,7 @@ _# Rajat Kumar (UIN: 653922910)
 ### Introduction
 Set Theory DSL is a Domain Specific Language created to create classes, objects and perform simple operations on Sets. It is build on top of Scala 3. Set operations like Union, Intersection, Set Difference, Symmetric Set Difference and Cartesian are implemented with the help of expression. Other operations like Inserting and deleting items are also implemented. Language specific operations like assigning the values to variables, fetching those variables, macros and their evaluation and scopes (both named and anonymous scopes) are also implemented. Classes, Object are also allowed to create. Classes can inherit other classes and single class inheritance is supported. There are interfaces and abstract classes also. There is also the support of Nested Classes. Operations on Sets can be performed with the help of this DSLs' capabilities to enable object-oriented programming. Other important features like Dynamic Dispatch and access modifiers are also supported.
 The functionality for control structures and exception handling has been introduced by adding support for If, If-Else, and Try-Catch exception handling expressions.
-As part of homework 5, it is possible to perform partial evaluation on the set expressions and an additional optimization step has also been intorduced, where certain `SetExpression` can be reduced according to the rules of the optimizing transformer function. 
+As part of homework 5, it is possible to perform partial evaluation on the set expressions and an additional optimization step has also been introduced, where certain `SetExpression` can be reduced according to the rules of the optimizing transformer function. 
 This can decrease the complexity for evaluating the expression.
 
 ---
@@ -46,6 +46,9 @@ The support of Object-Oriented Programming (OOP) behavior is also implemented. V
 Interface, Abstract Class declaration and their composition to create sophisticated hierarchical structures are also featured as part of homework 3 (branch `homework3`).
 As part of homework 4(branch `homework4`), control structures can be created using `If`, `IfElse` and `TryCatch` expressions. The control of evaluation changes when these expressions are introduced in the code. More details are discussed in the further sections.
 A deep down implementation, syntax and semantics is covered in the next section.
+As part of homework5(branch `homework5`), partial evaluation, optimizing transformer functions and map function has been implemented.
+
+For more details please see the documentation below or even better, open the file where the source code exists.
 
 ---
 
@@ -57,7 +60,7 @@ All expressions are of type `SetExpression`.
 Each expression or instruction need to be evaluated for its working. There are two types of evaluations for this DSL.
 
 1. **Total Evaluation**: This can be accomplished by adding or calling eval by `.eval` at the end of the outermost expression. As soon as the eval is called, all the expressions which are part of the expression on which eval is called, will be evaluated and the whole expression is reduced to a single value. This DSL generally works with Set Theory, so, its Set expressions and operation expression returns `Set[Any]` type value. However, this DSL is not limited to just sets. It is capable of return value of type `Any` with expressions like Value, UnitExp, etc.
-2. **Partial Evaluation (and optimization)**: Partial optimization can be achieved by calling method `evaluate` with syntax as `.evaluate`. This is actually a two part process, first is the true partial evaluation which modifies the SetExpression into another one by replacing values with variable references which are available in the binding environment of the scope active during the evaluation of that expression. If the resulting expression does not have any unknown variable reference left, it can be totally evaluated by just calling `.eval`. However, if there are still unknown variable references left in the expression, the expression cannot be reduced to a value. This allows the scope of optimization where the every part of the SetExpression is scanned for optimization. The optimizer tries to reduce the expression for simpler calculations based on some concrete rules of set theory. At the end, it again checks if the optimization has resulted in removal of unknown variable references from the expression and its body. If so, it is going to evaluated and reduced to a value, otherwise expression.
+2. **Partial Evaluation (and optimization)**: Partial optimization can be achieved by calling method `evaluate` with syntax as `.evaluate`. This is actually a two part process, first is the true partial evaluation which modifies the SetExpression into another one by replacing values with variable references which are available in the binding environment of the scope active during the evaluation of that expression. If the resulting expression does not have any unknown variable reference left, it can be totally evaluated by just calling `.eval`. However, if there are still unknown variable references left in the expression, the expression cannot be reduced to a value. This allows the scope of optimization where the every part of the SetExpression is scanned for optimization. The optimizer tries to reduce the expression for simpler calculations based on some concrete rules of set theory. At the end, it again checks if the optimization has resulted in removal of unknown variable references from the expression and its body. If so, it is going to evaluate and reduced to a value, otherwise expression.
 
 For example, the below code declares a variable with name `var1` and assign it a value of `1` (which is the evaluated value of `Value(3)` expression itself). Since, `Value(1)` is also an expression, but you do not need to call `eval` on it separately. You just have to call `eval` on the outermost expression which is `Assign` in this case.
 ```
@@ -70,6 +73,118 @@ Here is the syntax for partial evaluation:
 SetIdentifier( Value(1) ).evaluete   // partial evaluation + optimization
 ```
 
+The return type of `evaluate` is `Set[Any] | SetExpression | Any`. This seems confusing as it could have been just `Any` for simplicity.
+However, this is deliberately done to show the user of the code that the expression actually result in SetExpression or Set[Any] or any other value.
+This is because, this DSL has the capability to return any value from expression such as Value(AnyValue).
+
+List of the expression which are checked for unknown variable references:
+```
+Value
+Variable
+Assign
+UnnamedScope
+NamedScope
+TryCatch
+Try
+Catch
+If
+IfElse
+Then
+Else
+SetIdentifier
+Union
+Intersection
+SetDifference
+SymDifference
+CartesianProduct
+Contains
+Equals
+InsertInto
+DeleteFrom
+Check
+Macro
+ComputeMacro
+```
+Other expressions are partially evaluated to themselves.
+
+### Optimization
+Several optimization steps are performed on `SetExpression` which is partially evaluated first.
+These step refers to a process where the optimizer keeps getting called until the input expression is same as the resulting (optimized) expression which means that there is no scope for further optimization.
+
+There are certain rules for optimization which are written very clearly in the code and are easy to understand.
+One example is `Union(SetIdentifier(), SetIdentifier( Variable("x") )).evaluate`.
+Executing the above code will result in partial evaluation and will reach the optimization step since there is an unknown variable in the expression.
+However, as per set rules, if one of the set for calculating the union is empty, the result of union can simply be the other set.
+So, the optimization step takes this rule into consideration and evaluates the above code to `SetIdentifer( Variable("x") )`.
+
+This is only one the rules, there are rules for `SetIdentifier`, `Intersection`, `SetDifference`, `SymDifference`, `CartesianProduct` and even some on `If` and `IfElse` expression.
+
+Once, the optimization step is done, the expression is again checked for completeness as in absence of unknown variable references. If there are no variables left (assuming they got eliminated by optimization step), then expression can be evaluated to a value.
+However, if the unknown variable references still exist, then the expression is return by the evaluator.
+
+
+### Map
+This is an additional feature which has been implemented as part of `homework5`.
+Generally a map takes a container of certain type and converts/maps it into container of another type. It also accepts a transformer function which responsible for changing every element in that container to a different type.
+
+In this homework, SetExpression is considered a kind of container. This whole DSL is based on evaluating a singular expression which results into evaluating its child expressions in a certain way.
+So, the map actually operates directly on SetExpression.
+
+It also accepts one transformer function whose signature is as follows:
+```
+transformerFunction: SetExpression => SetExpression
+```
+
+It takes a SetExpression and returns another SetExpression. It's body decides how it transforms input to output.
+
+For example a transformer function can look like below:
+```
+def tf(exp: SetExpression): SetExpression = exp match {
+    case Value(v) => UnitExp
+    case _ => exp
+}
+```
+The above function maps any expression that matches Value to UnitExp and leaving other expressions as it is.
+
+Signature of map function is:
+```
+SetExp.map(transformerFunction: SetExpression => SetExpression): SetExpression
+```
+
+For different expressions, map works a little differently.
+
+For example, applying map on UnnamedScope does not change the UnnamedScope expression because it is considered a container for inner expression.
+The map function would instead transform the expression which are part of body of UnnamedScope.
+
+However, for certain other expressions, it would map directly to that expression instead (Unit for monoid). For example, UnitExp, Value(v), etc.
+```
+SetExp.map(transformerFunction: SetExpression => SetExpression): SetExpression = SetExp match {
+    case UnnamedScope(scopeExpArgs*) => UnnamedScope(scopeExpArgs.map( transformerFunction(_) )*)
+        .
+        .
+        .
+    case _ => transformerFunction(this)
+}
+```
+
+Usage:
+```
+// custom transformer function
+def unionToSetTransformer(exp: SetExpression): SetExpression = exp match {
+  case Union(s1, s2) => SetIdentifier()
+  case _ => exp
+}
+
+UnnamedScope(
+    Union(SetIdentifier(Value(1)), SetIdentifier(Variable("x"))),
+    Union(SetIdentifier(Value(2)), SetIdentifier(Variable("y"))),
+).map(
+    unionToSetTransformer
+).evaluate
+```
+
+There are two default transformer method already defined in the code named `defaultIfOptimizer` and `defaultIfElseOptimizer` which users can use and utilize for mapping. 
+However, users are free to write their own transformers like the code in above snippet cell.
 ___
 
 ## Set Operation Syntax and Semantics
@@ -170,12 +285,13 @@ Assign("var1", Value(20) ).eval
 ComputeMacro( Variable("macro1") ).eval               // return 20
 ```
 
-### NamedScope(scopeName: String, scopeExpArgs: SetExpression*)
+### NamedScope(scopeName: String, scopeExpArgs: SetExpression*): Any
 The `NamedScope` expression is used to create a named scope block. We can even nest multiple scope blocks with it. A NamedScope's bindings can be accessed again in the code if the NamedScope created is a direct children on current scope.
 It takes first argument as scopeName which is a String. `scopeExpArgs` are a sequence of arguments passed to it. It can be more than one. The concept is that you can execute more than one instruction in a particular scope without re-writing its name.
 
 Partial Evaluation: If there are unknown variable in expression, its partial evaluation returns another NamedScope with its inner elements getting partially evaluated and optimized as well.
 
+It returns the last expression evaluated or expression (in case of partial evaluation) in the scope body.
 For Example:
 
 ```
@@ -218,10 +334,10 @@ NamedScope("scope1",
 
 ```
 
-### UnnamedScope(scopeExpArgs: SetExpression*)
+### UnnamedScope(scopeExpArgs: SetExpression*): Any
 The `UnnamedScope` expression is similar to `NamedScope` expression above. However, there are few differences. It does not have a name. We only specify the SetExpression(s) to execute in that scope. Also, since, it does not have a name, it will not be accessible to its parent once it is closed. If any named or Unnamed scopes are created inside it, they will also not be accessing if this scope closes.
 It's similar to NamedScope in the sense that they share almost the same syntax except name as the first argument.
-
+It returns the last expression evaluated or expression (in case of partial evaluation) in the scope body.
 Example:
 ```
 UnnamedScope( 
@@ -320,7 +436,7 @@ InsertInto( Variable("set1"), Value(30), Variable("var1") ).eval         // inse
 Variable("set1").eval                                                    // Would return Set(20, 30, "insertValue")
 ```
 
-### DeleteFrom(setExp: SetExpression, setExpArgs: SetExpression*)
+### DeleteFrom(setExp: SetExpression, setExpArgs: SetExpression*): collection.mutable.Set[Any]
 The `DeleteFrom` expression deletes one or many values from a Set. The first argument is a `SetExpression` which should resolve to a `mutable.Set[Any]` and other arguments are also of type `SetExpression` which are the values that need to be removed from the Set. Multiple values can be removed with one expression.
 
 Syntax/Code Example:
@@ -1249,9 +1365,9 @@ Answer: No, they cannot be. There is no way to instantiate an interface in this 
 ## Control Structures Syntax and Semantics
 ___
 
-### If(ConditionExp: SetExpression, thenClause: SetExpression.Then)
+### If(ConditionExp: SetExpression, thenClause: SetExpression): Any
 `If` expression is used as a control structure which acts as a branching structure and evaluates its `thenClause` when the evaluation of `condition` expression is a true value.
-
+The `If` expression return the evaluation of last expression of then branch if condition is true otherwise it evaluates to Unit (partially evaluate to UnitExp).
 Usage / Example:
 ```
 If( Check( Equals(Variable("var1"), Value(20)) ),     // condition expression as first argument
@@ -1261,9 +1377,10 @@ If( Check( Equals(Variable("var1"), Value(20)) ),     // condition expression as
 ).eval
 ```
 
-### IfElse(ConditionExp: SetExpression, thenClause: SetExpression.Then, elseClause: SetExpression.Else)
+### IfElse(ConditionExp: SetExpression, thenClause: SetExpression, elseClause: SetExpression): Any
 `IfElse` expression is used as a control structure which acts as a branching structure and evaluates its `thenClause` when the evaluation of `condition` expression is a true value, otherwise evaluates its `elseClause` expression.
 The usage is very similar to `If` expression above.
+The `IfElse` expression return the evaluation of last expression of whichever branch is evaluated.
 
 Usage / Example:
 ```
@@ -1328,7 +1445,7 @@ IfElse( Check( Equals(Variable("var4"), Value(20)) ),
 ).eval
 ```
 
-### TryCatch(tryExp: SetExpression.Try, catchExpSeq: SetExpression.Catch*)
+### TryCatch(tryExp: SetExpression, catchExpSeq: SetExpression*)
 `TryCatch` expression is used for writing code that can throw exception in the DSL. The code/expressions that needs to be protected are supposed to be added in this expression.
 It has two parts. the first is `Try` expression and the second is `Catch`, both of them are mentioned in detail later in the documentation 
 `TryCatch` can only have one `Try` expression (as its first argument) but it does support multiple `Catch` expressions.
@@ -1447,6 +1564,18 @@ TryCatch(
     InsertInto(Variable("set12"), FieldFromObject("cause", Variable("e1")))  // evaluating this expression will lead to inserting the "my exception cause" string to Set "set12"
   )
 ).eval
+
+// Partial evaluation
+TryCatch(
+  Try(
+    InsertInto(Variable("set12"), Value(50)),
+    ThrowNewException(ClassRef("c1"), Value("my exception cause")),     
+    InsertInto(Variable("set12"), Value(100)),
+  ),
+  Catch("e1", ClassRef(exceptionClassName2),
+    InsertInto(Variable("set12"), FieldFromObject("cause", Variable("e1")))  
+  )
+).evaluate
 ```
 
 ## Additional Features:
@@ -1459,6 +1588,9 @@ It is not advised to use it as a regular Set Expression. But the choice is to th
 Usage:
 ```
 GarbageCollector.eval
+
+// Partial evaluation
+GarbageCollector.evaluate
 ```
 
 
@@ -1467,4 +1599,4 @@ GarbageCollector.eval
 
 ___
 Those are all the Data-types and expressions of DSL Set Theory as of now.
-More exciting stuff coming soon.
+More exciting stuff coming ahead.

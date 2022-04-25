@@ -1638,6 +1638,8 @@ object SetTheoryDSL {
         switchToParentScope()
         Else( pEvalArgs* )
 
+      case Check(exp) => Check(exp.pEval)
+
       case UnnamedScope(expSeq*) =>
         val newScope: Scope = new Scope(null, getCurrentScope)
         createNewScope(newScope)
