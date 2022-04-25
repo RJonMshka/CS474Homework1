@@ -1552,7 +1552,6 @@ object SetTheoryDSL {
      */
     case UnitExp
 
-    @tailrec
     /** This method evaluates SetExpressions partially
      * Description - It performs the partial evaluation by replacing all the known variable references with their values and returns the same expression with known variables replaced
      *
