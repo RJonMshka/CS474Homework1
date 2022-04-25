@@ -1593,6 +1593,7 @@ object SetTheoryDSL {
         // find the set stored in the variable and remove evaluated values of each expression from it if they are already present in the set
         val storedSet = setExp.eval.asInstanceOf[SetType]
         setExpArgs.foreach(i => storedSet.remove(i.eval))
+        storedSet
 
       // Contains Expression Implementation
       case Contains(setExp, valExp) =>
@@ -1902,6 +1903,8 @@ object SetTheoryDSL {
       case SetExpression.CartesianProduct(s1, SetExpression.SetIdentifier()) => SetExpression.SetIdentifier()
       case _ => SetExpression.CartesianProduct(optimize(s1), optimize(s2))
     }
+    case SetExpression.UnnamedScope(scopeExpArgs*) => SetExpression.UnnamedScope( scopeExpArgs.map( optimize )* )
+    case SetExpression.NamedScope(n, scopeExpArgs*) => SetExpression.NamedScope(n, scopeExpArgs.map( optimize )* )
     case SetExpression.If(cond, thenClause) =>
       val optimizedCond = optimize(cond)
       val optimizedThen = optimize(thenClause)
